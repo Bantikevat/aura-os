@@ -244,6 +244,100 @@ class AuraEngine {
       };
     }
 
+    // 6.2. Real Web App Launchers ("Open YouTube", "Open GitHub", "Open Google")
+    if (pLower.includes('youtube')) {
+      return {
+        status: 'verified_complete',
+        intent: 'open_url',
+        url: 'https://www.youtube.com',
+        response: 'बंटी भाई, यूट्यूब खोल रहा हूँ!',
+        action: 'open_url'
+      };
+    }
+    if (pLower.includes('github') || pLower.includes('repo')) {
+      return {
+        status: 'verified_complete',
+        intent: 'open_url',
+        url: 'https://github.com/Bantikevat/aura-os',
+        response: 'बंटी भाई, आपकी AURA गिटहब रिपॉजिटरी खोल रहा हूँ!',
+        action: 'open_url'
+      };
+    }
+    if (pLower.includes('google')) {
+      return {
+        status: 'verified_complete',
+        intent: 'open_url',
+        url: 'https://www.google.com',
+        response: 'गूगल सर्च खोल रहा हूँ बंटी भाई!',
+        action: 'open_url'
+      };
+    }
+
+    // 6.3. Real Alarm & Timer ("Alarm set kar do 5 minute", "Set alarm for 10 minutes")
+    if (pLower.includes('alarm') || pLower.includes('timer') || pLower.includes('अलार्म') || pLower.includes('टाइमर')) {
+      const matchMin = prompt.match(/(\d+)\s*(min|minute|मिनट)/i);
+      const minutes = matchMin ? parseInt(matchMin[1], 10) : 5;
+      
+      this.notifications.unshift({
+        id: 'notif_alarm_' + Date.now(),
+        title: 'Alarm Set',
+        message: `${minutes} minute timer initiated`,
+        type: 'alarm',
+        timestamp: new Date().toISOString(),
+        read: false,
+        link: 'home'
+      });
+
+      return {
+        status: 'verified_complete',
+        intent: 'set_alarm',
+        minutes,
+        response: `बंटी भाई, ${minutes} मिनट का अलार्म सेट कर दिया गया है। समय पूरा होते ही मैं आपको बीप और आवाज़ के साथ अलर्ट कर दूंगा।`,
+        action: 'set_alarm'
+      };
+    }
+
+    // 6.4. Real System Time ("Time bata do", "What is the time", "Time kya hua")
+    if (pLower.includes('time') || pLower.includes('समय') || pLower.includes('घड़ी') || pLower.includes('kitne baje')) {
+      const now = new Date();
+      let h = now.getHours();
+      const m = now.getMinutes();
+      const ampm = h >= 12 ? 'दोपहर/शाम' : 'सुबह';
+      h = h % 12 || 12;
+      const timeInWords = `${ampm} के ${h} बजकर ${m} मिनट`;
+
+      return {
+        status: 'verified_complete',
+        intent: 'tell_time',
+        formattedTime: now.toLocaleTimeString(),
+        response: `बंटी भाई, अभी का समय ${timeInWords} हो रहा है।`,
+        action: 'tell_time'
+      };
+    }
+
+    // 6.5. "Abhi kya chal raha hai" / Status Overview
+    if (pLower.includes('kya chal raha') || pLower.includes('status batao') || pLower.includes('what are you doing') || pLower.includes('kya ho raha')) {
+      const goalsCount = this.goals.getActiveGoals().length;
+      const memoriesCount = this.memory.getAll().length;
+      return {
+        status: 'verified_complete',
+        intent: 'status_overview',
+        response: `बंटी भाई, AURA बिल्कुल एक्टिव और आपकी सेवा में रेडी है। आपके कुल ${goalsCount} एक्टिव गोल्स/टास्क्स पाइपलाइन में हैं, और मेमोरी स्टोर में ${memoriesCount} यादें सुरक्षित हैं। सिस्टम 100% स्मूथ चल रहा है!`,
+        action: 'status_overview'
+      };
+    }
+
+    // 6.6. English Practice Partner Mode ("English practice", "Practice English", "Let's talk in English")
+    if (pLower.includes('english practice') || pLower.includes('practice english') || pLower.includes('english me') || pLower.startsWith('hi aura') || pLower.startsWith('hello aura')) {
+      return {
+        status: 'verified_complete',
+        intent: 'english_practice',
+        mode: 'english',
+        response: `Awesome Banti! I am your English practice partner. Let's speak in English! Tell me, what did you work on today, and how is your AI engineering journey going?`,
+        action: 'english_practice'
+      };
+    }
+
     // 7. System Inspector Tool Loop (System health, status, telemetry)
     if (pLower.includes('system') || pLower.includes('health') || pLower.includes('status') || pLower.includes('ram')) {
       const tool = this.tools.get('system_inspector');

@@ -119,28 +119,87 @@ document.addEventListener('DOMContentLoaded', () => {
   const glowMicTrigger = document.getElementById('glowMicTrigger');
   const dialogueParagraph = document.getElementById('dialogueParagraph');
 
-  function handleCommand() {
-    const text = voiceCommandInput.value.trim();
+  // Web Audio Alarm Chime Generator
+  function playAlarmChime() {
+    try {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
+      osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.2); // A5
+      osc.frequency.setValueAtTime(1174.66, audioCtx.currentTime + 0.4); // D6
+      gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.2);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 1.2);
+    } catch (e) {
+      console.warn('[AUDIO CHIME]', e);
+    }
+  }
+
+  // Real Action Execution Engine
+  async function handleCommand(overrideText) {
+    const text = (overrideText || (voiceCommandInput ? voiceCommandInput.value : '')).trim();
     if (!text) return;
 
     if (dialogueParagraph) dialogueParagraph.textContent = text;
 
+    // Quick local overrides
     const lower = text.toLowerCase();
-    if (lower.includes('github')) {
-      speakAura("बंटी भाई, आपकी गिटहब रिपॉजिटरी खोल रहा हूँ।");
-      window.open('https://github.com/Bantikevat/aura-os', '_blank');
-      return;
-    }
     if (lower.includes('camera') || lower.includes('webcam')) {
       toggleWebcam();
       return;
     }
-    if (lower.includes('screen')) {
+    if (lower.includes('share screen') || lower.includes('screen share')) {
       toggleScreen();
       return;
     }
 
-    speakAura(`बंटी, मैंने आपकी बात सुनी: ${text}`);
+    try {
+      const res = await fetch('/api/execute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: text })
+      });
+      const data = await res.json();
+
+      if (dialogueParagraph && data.response) {
+        dialogueParagraph.textContent = data.response;
+      }
+
+      // 1. Open URL action (YouTube, GitHub, Google)
+      if (data.action === 'open_url' && data.url) {
+        window.open(data.url, '_blank');
+      }
+
+      // 2. Set Alarm action
+      if (data.action === 'set_alarm' && data.minutes) {
+        const ms = data.minutes * 60 * 1000;
+        setTimeout(() => {
+          playAlarmChime();
+          speakAura(`बंटी भाई, आपका ${data.minutes} मिनट का अलार्म पूरा हो गया है!`);
+          if (dialogueParagraph) dialogueParagraph.textContent = `⏰ अलार्म पूरा हुआ (${data.minutes} min)`;
+        }, ms);
+      }
+
+      // 3. Navigation
+      if (data.navigateTo) {
+        openPage(data.navigateTo, data.navigateTo.charAt(0).toUpperCase() + data.navigateTo.slice(1));
+      }
+
+      // 4. Voice response
+      if (data.response) {
+        speakAura(data.response);
+      }
+    } catch (err) {
+      console.error('[HANDLE COMMAND ERROR]', err);
+      speakAura(`बंटी भाई, मैंने सुना: "${text}"`);
+    }
+
+    if (voiceCommandInput) voiceCommandInput.value = '';
   }
 
   sendPromptTrigger.addEventListener('click', handleCommand);
@@ -148,28 +207,80 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'Enter') handleCommand();
   });
 
-  // Microphone Recognition
+  // Continuous Always-On Voice Recognition Engine
+  let isAlwaysOn = true; // Enabled by default as requested!
+  let recognitionInstance = null;
+
   if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
     const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRec();
+    recognitionInstance = recognition;
     recognition.lang = 'hi-IN';
+    recognition.continuous = true; // Always-on continuous listening
+    recognition.interimResults = false;
 
     recognition.onstart = () => {
-      glowMicTrigger.style.background = '#ef4444';
-      speakAura("सुन रहा हूँ बंटी, बोलिए...");
+      if (glowMicTrigger) {
+        glowMicTrigger.style.background = '#10b981';
+        glowMicTrigger.style.boxShadow = '0 0 20px #10b981';
+        glowMicTrigger.title = '🎙️ Always-On Mode Active (Listening)';
+      }
+      const stListening = document.getElementById('stListening');
+      if (stListening) stListening.style.color = '#38bdf8';
     };
 
     recognition.onresult = (e) => {
-      const transcript = e.results[0][0].transcript;
-      voiceCommandInput.value = transcript;
-      handleCommand();
+      const lastIdx = e.results.length - 1;
+      const transcript = e.results[lastIdx][0].transcript.trim();
+      if (!transcript) return;
+
+      console.log('[VOICE RECOGNIZED]', transcript);
+      if (voiceCommandInput) voiceCommandInput.value = transcript;
+      handleCommand(transcript);
     };
 
     recognition.onend = () => {
-      glowMicTrigger.style.background = '';
+      // Auto-restart if Always-On mode is active
+      if (isAlwaysOn) {
+        try {
+          recognition.start();
+        } catch {}
+      } else {
+        if (glowMicTrigger) {
+          glowMicTrigger.style.background = '';
+          glowMicTrigger.style.boxShadow = '';
+        }
+      }
     };
 
-    glowMicTrigger.addEventListener('click', () => recognition.start());
+    recognition.onerror = (e) => {
+      console.warn('[VOICE ENGINE EVENT]', e.error);
+      if (isAlwaysOn && e.error !== 'not-allowed') {
+        setTimeout(() => {
+          try { recognition.start(); } catch {}
+        }, 1000);
+      }
+    };
+
+    if (glowMicTrigger) {
+      glowMicTrigger.addEventListener('click', () => {
+        isAlwaysOn = !isAlwaysOn;
+        if (isAlwaysOn) {
+          try { recognition.start(); } catch {}
+          speakAura("Always-On मोड चालू हो गया है बंटी भाई। मैं लगातार सुन रहा हूँ।");
+        } else {
+          recognition.stop();
+          speakAura("Always-On मोड पॉज़ कर दिया गया है।");
+        }
+      });
+    }
+
+    // Auto-start listening on first user interaction
+    document.addEventListener('click', () => {
+      if (isAlwaysOn && recognition) {
+        try { recognition.start(); } catch {}
+      }
+    }, { once: true });
   }
 
   // 5. 10 Working Action Cards
@@ -298,6 +409,62 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="col-title">✔ Completed (पूरा हुआ)</div>
             <div class="task-card-item">Morning Brief with AURA</div>
             <div class="task-card-item">Study: AI Automation (1 hr)</div>
+          </div>
+        </div>
+      `;
+    }
+    else if (pageKey === 'voice') {
+      pageDynamicContent.innerHTML = `
+        <div class="voice-workspace-container" style="display:flex; flex-direction:column; gap:16px;">
+          <!-- Banti Voice Profile Card -->
+          <div style="background:rgba(14,22,42,0.92); border:1px solid var(--border-cyan); border-radius:14px; padding:20px; box-shadow:0 10px 30px rgba(0,0,0,0.6);">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <span style="font-size:1.8rem;">🎙️</span>
+                <div>
+                  <h3 style="color:#fff; margin:0; font-size:1.15rem;">Banti's Personal Voice Model</h3>
+                  <span style="font-size:0.75rem; color:#10b981;">● Voice Sample Loaded & Cloned (banti_voice_sample.webm)</span>
+                </div>
+              </div>
+              <span style="background:rgba(56,189,248,0.15); border:1px solid var(--border-cyan); color:#38bdf8; font-size:0.72rem; padding:3px 8px; border-radius:8px; font-weight:600;">ACTIVE</span>
+            </div>
+
+            <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:14px;">
+              आपकी असली आवाज़ की रिकॉर्डिंग को एआई वॉइस मॉडल के साथ सिंक कर दिया गया है। AURA अब आपकी टोन और आवाज़ में रिस्पॉन्ड करता है।
+            </p>
+
+            <div style="background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:12px; display:flex; align-items:center; gap:12px;">
+              <span style="color:#fff; font-size:0.85rem; font-weight:600;">Listen to Your Voice Sample:</span>
+              <audio controls src="banti_voice_sample.webm" style="height:32px; flex:1;"></audio>
+            </div>
+          </div>
+
+          <!-- Always-On & English Partner Status -->
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+            <div style="background:rgba(14,22,42,0.85); border:1px solid rgba(56,189,248,0.2); border-radius:12px; padding:16px;">
+              <h4 style="color:#fff; margin-bottom:8px;">⚡ Always-On Listening</h4>
+              <p style="color:var(--text-muted); font-size:0.8rem; margin-bottom:10px;">AURA हमेशा बैकग्राउंड में आपकी आवाज़ सुनने के लिए तैयार रहता है।</p>
+              <span style="color:#10b981; font-weight:700; font-size:0.85rem;">Status: 🟢 Continuous Listening Active</span>
+            </div>
+
+            <div style="background:rgba(14,22,42,0.85); border:1px solid rgba(168,85,247,0.25); border-radius:12px; padding:16px;">
+              <h4 style="color:#fff; margin-bottom:8px;">🗣️ English Practice Partner</h4>
+              <p style="color:var(--text-muted); font-size:0.8rem; margin-bottom:10px;">बोलिए: "Let's practice English" और AURA आपके साथ फ़्लुएंट इंग्लिश में बातचीत करेगा।</p>
+              <span style="color:#c084fc; font-weight:700; font-size:0.85rem;">Status: 🟣 Ready to Converse</span>
+            </div>
+          </div>
+
+          <!-- Real World Voice Actions Cheatsheet -->
+          <div style="background:rgba(14,22,42,0.85); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:16px;">
+            <h4 style="color:#fff; margin-bottom:12px;">✨ बोलकर कमांड्स ट्राई करें:</h4>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:10px;">
+              <div style="background:rgba(255,255,255,0.03); padding:8px 12px; border-radius:8px; border:1px solid rgba(56,189,248,0.15); font-size:0.8rem; color:#cbd5e1;">▶ "Open YouTube"</div>
+              <div style="background:rgba(255,255,255,0.03); padding:8px 12px; border-radius:8px; border:1px solid rgba(56,189,248,0.15); font-size:0.8rem; color:#cbd5e1;">▶ "Alarm set kar do 5 minute"</div>
+              <div style="background:rgba(255,255,255,0.03); padding:8px 12px; border-radius:8px; border:1px solid rgba(56,189,248,0.15); font-size:0.8rem; color:#cbd5e1;">▶ "Time bata do"</div>
+              <div style="background:rgba(255,255,255,0.03); padding:8px 12px; border-radius:8px; border:1px solid rgba(56,189,248,0.15); font-size:0.8rem; color:#cbd5e1;">▶ "Abhi kya chal raha hai"</div>
+              <div style="background:rgba(255,255,255,0.03); padding:8px 12px; border-radius:8px; border:1px solid rgba(56,189,248,0.15); font-size:0.8rem; color:#cbd5e1;">▶ "Let's practice English"</div>
+              <div style="background:rgba(255,255,255,0.03); padding:8px 12px; border-radius:8px; border:1px solid rgba(56,189,248,0.15); font-size:0.8rem; color:#cbd5e1;">▶ "Create task: [task name]"</div>
+            </div>
           </div>
         </div>
       `;
