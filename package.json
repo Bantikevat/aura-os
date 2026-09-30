@@ -5,7 +5,8 @@
   "private": true,
   "scripts": {
     "start": "node packages/server/src/index.js",
-    "test": "node tests/run_tests.js"
+    "test": "node packages/core/src/demo.js",
+    "demo": "node packages/core/src/demo.js"
   },
   "keywords": [
     "personal-ai",
