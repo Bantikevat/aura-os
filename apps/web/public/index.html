@@ -3,99 +3,346 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AURA — Personal 3D Avatar (Photo-to-Avatar)</title>
+  <title>AURA — Your Personal AI Life OS</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
-  <!-- Three.js CDN -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 </head>
 <body>
-  <div class="aurora-bg"></div>
-
-  <!-- Header -->
-  <header class="command-bar">
-    <div class="brand">
-      <div class="pulse-orb"></div>
-      <div class="brand-text">
-        <h1>AURA 3D</h1>
-        <span class="subtext">PERSONAL AVATAR & VOICE ENGINE</span>
-      </div>
-    </div>
-
-    <!-- Actions: Create My Avatar & Voices -->
-    <div class="header-actions">
-      <button id="openSelfieModalBtn" class="magic-pill-btn">📸 Make Avatar with My Photo (Selfie)</button>
-      <button id="avatarUploadBtn" class="pill-btn">📂 Upload .GLB File</button>
-      <input type="file" id="glbFileInput" accept=".glb,.gltf" style="display:none;">
-      
-      <div class="voice-picker-wrap">
-        <label for="voiceSelect">🗣️ Voice:</label>
-        <select id="voiceSelect" class="styled-select"></select>
-      </div>
-    </div>
-  </header>
-
-  <!-- Main Viewport -->
-  <div class="avatar-stage-container">
-    <div id="canvasContainer" class="canvas-3d-wrap">
-      <div class="canvas-overlay">
-        <div class="avatar-status-pill">
-          <span class="live-dot"></span> <span id="avatarStateText">IDLE · WAITING FOR COMMAND</span>
+  <div class="app-layout">
+    
+    <!-- Top Navigation Header -->
+    <header class="top-nav">
+      <div class="logo-area">
+        <div class="aura-icon-logo">
+          <svg viewBox="0 0 40 40" fill="none">
+            <path d="M20 4L4 34H12L20 18L28 34H36L20 4Z" fill="url(#logo-grad)"/>
+            <path d="M14 26H26L20 14L14 26Z" fill="#0b1120"/>
+            <defs>
+              <linearGradient id="logo-grad" x1="4" y1="4" x2="36" y2="34" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#38bdf8"/>
+                <stop offset="0.5" stop-color="#818cf8"/>
+                <stop offset="1" stop-color="#c084fc"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <div class="logo-text">
+          <h1>AURA</h1>
+          <span>Your Personal AI Life OS</span>
         </div>
       </div>
-      <div id="loadingSpinner" class="loading-overlay" style="display:none;">
-        <div class="spinner"></div>
-        <p>Loading your 3D Face & Avatar...</p>
-      </div>
-    </div>
 
-    <!-- Interactive Speech & Action Controls -->
-    <div class="speech-control-panel">
-      <!-- Activity Gestures -->
-      <div class="activity-bar">
-        <span class="bar-title">ACTIVITIES:</span>
-        <button class="act-btn active" data-action="idle">🧍 Idle</button>
-        <button class="act-btn" data-action="talk">🗣️ Speak</button>
-        <button class="act-btn" data-action="nod">👍 Agree</button>
-        <button class="act-btn" data-action="think">🤔 Think</button>
-        <button class="act-btn" data-action="wave">👋 Wave</button>
+      <div class="search-bar-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="globalSearch" placeholder="Ask AURA anything...">
+        <button class="voice-search-btn" id="headerMicBtn">🎙️</button>
       </div>
 
-      <!-- Dialogue & Voice Interaction Box -->
-      <div class="speech-box">
-        <div class="avatar-subtitles" id="subtitlesBox">
-          "Banti! 'Make Avatar with My Photo' button dabao, apni photo upload karo ya selfie lo, aur main bilkul tumhari tarah dikhne lagunga!"
-        </div>
-
-        <div class="speech-input-row">
-          <input type="text" id="speakInput" placeholder="AURA se kya bulwana chahte hain? Type karein aur Enter dabayein..." value="Banti! 'Make Avatar with My Photo' button dabao aur main bilkul tumhari tarah ban jaunga.">
-          <button id="speakBtn" class="primary-glow-btn">🔊 Speak Out Loud</button>
-          <button id="micBtn" class="mic-btn" title="Speak through Microphone">🎙️</button>
+      <div class="user-profile-area">
+        <button class="icon-circle-btn" title="Notifications">🔔<span class="notif-dot"></span></button>
+        <button class="icon-circle-btn" id="themeToggle" title="Theme">☀️</button>
+        <div class="profile-chip">
+          <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" alt="Banti" class="avatar-thumb">
+          <div class="profile-info">
+            <span class="name">Hello, Banti</span>
+            <span class="status-indicator"><span class="dot-green"></span> Online</span>
+          </div>
         </div>
       </div>
+    </header>
+
+    <!-- Main Body Layout: Left Sidebar + Center Stage + Right Sidebar -->
+    <div class="main-body">
+
+      <!-- LEFT SIDEBAR -->
+      <aside class="left-sidebar">
+        <nav class="nav-menu">
+          <a href="#" class="nav-item active" data-page="home"><span class="nav-icon">🏠</span> Home</a>
+          <a href="#" class="nav-item" data-page="chat"><span class="nav-icon">💬</span> Chat</a>
+          <a href="#" class="nav-item" data-page="tasks"><span class="nav-icon">☑️</span> Tasks</a>
+          <a href="#" class="nav-item" data-page="learning"><span class="nav-icon">📚</span> Learning</a>
+          <a href="#" class="nav-item" data-page="projects"><span class="nav-icon">📁</span> Projects</a>
+          <a href="#" class="nav-item" data-page="tools"><span class="nav-icon">🛠️</span> Tools</a>
+          <a href="#" class="nav-item" data-page="automation"><span class="nav-icon">🎯</span> Automation</a>
+          <a href="#" class="nav-item" data-page="research"><span class="nav-icon">🔬</span> Research</a>
+          <a href="#" class="nav-item" data-page="memory"><span class="nav-icon">⏱️</span> Memory</a>
+          <a href="#" class="nav-item" data-page="calendar"><span class="nav-icon">📅</span> Calendar</a>
+          <a href="#" class="nav-item" data-page="files"><span class="nav-icon">📄</span> Files</a>
+          <a href="#" class="nav-item" data-page="devices"><span class="nav-icon">🖥️</span> Devices</a>
+          <a href="#" class="nav-item" data-page="settings"><span class="nav-icon">⚙️</span> Settings</a>
+        </nav>
+
+        <div class="aura-pro-card">
+          <div class="pro-crown">👑</div>
+          <div class="pro-text">
+            <h3>AURA PRO</h3>
+            <p>Unlimited Possibilities</p>
+          </div>
+        </div>
+      </aside>
+
+      <!-- CENTER CONTENT STAGE -->
+      <section class="center-stage">
+        
+        <!-- Hero Stage with Avatar & Greeting -->
+        <div class="hero-character-card">
+          <!-- Background Futuristic City Room -->
+          <div class="hero-backdrop"></div>
+
+          <!-- Avatar Illustration & Hologram Globe -->
+          <div class="character-visual-wrap">
+            <div class="hologram-globe">
+              <div class="globe-sphere"></div>
+              <div class="orbit-ring"></div>
+            </div>
+            <!-- Banti Avatar Image -->
+            <img src="aura-hero.jpg" alt="AURA Avatar" class="avatar-hero-img">
+          </div>
+
+          <!-- Greeting & Description -->
+          <div class="hero-content">
+            <h2 class="hero-title">
+              Hi <span class="highlight-banti">Banti</span>,<br>
+              I'm <span class="highlight-aura">AURA</span>
+            </h2>
+            <p class="hero-desc">Your Personal AI For Life, Learning and Digital Action</p>
+            <div class="always-with-you-badge">
+              <span class="sparkle-icon">✨</span> I'm here with you Always ✨
+            </div>
+          </div>
+
+          <!-- Sunrise Date & Quote Widget -->
+          <div class="sunrise-widget">
+            <div class="time-header">
+              <span class="date-text" id="liveDate">Tue, 30 Sep 2026</span>
+              <span class="clock-text" id="liveClock">07:24 AM</span>
+            </div>
+            <div class="sunrise-visual">
+              <div class="sun-glow"></div>
+            </div>
+            <div class="quote-text">
+              "Small steps today<br>Build your big tomorrow." 🍃
+            </div>
+          </div>
+        </div>
+
+        <!-- Command & Speech Dialogue Input -->
+        <div class="interactive-command-section">
+          <div class="command-pill-bar">
+            <div class="aura-spark-icon">✨</div>
+            <input type="text" id="mainPromptInput" placeholder="Talk to AURA or type your command..." value="Plan my schedule for building AURA Life OS today">
+            <button class="mic-action-btn" id="mainMicBtn" title="Speak to AURA">🎙️</button>
+            <button class="send-action-btn" id="mainSendBtn">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Quick Action Suggestion Chips -->
+          <div class="quick-action-chips">
+            <button class="action-chip" data-cmd="Plan my day">🗓️ Plan my day</button>
+            <button class="action-chip" data-cmd="Explain this code">🔀 Explain this code</button>
+            <button class="action-chip" data-cmd="Search for latest AI news">💬 Search for latest AI news</button>
+            <button class="action-chip" data-cmd="Open GitHub">🐙 Open GitHub</button>
+            <button class="action-chip" data-cmd="Teach me a topic">🎓 Teach me a topic</button>
+            <button class="action-chip" data-cmd="Summarize this PDF">📑 Summarize this PDF</button>
+            <button class="action-chip" data-cmd="Create a task">✏️ Create a task</button>
+            <button class="action-chip" data-cmd="Browser automation">🌐 Browser automation</button>
+          </div>
+        </div>
+
+        <!-- Mode Cards Row (5 Cards) -->
+        <div class="mode-cards-grid">
+          <!-- 1. Teacher Mode -->
+          <div class="mode-card teacher" data-mode="teacher">
+            <div class="mode-icon-circle teacher-icon">📖</div>
+            <h3>Teacher Mode</h3>
+            <p>Learn faster with personalized guidance.</p>
+            <button class="mode-btn teacher-btn">Start Learning &rarr;</button>
+          </div>
+
+          <!-- 2. Engineer Mode -->
+          <div class="mode-card engineer active" data-mode="engineer">
+            <div class="mode-icon-circle engineer-icon">&lt;/&gt;</div>
+            <h3>Engineer Mode</h3>
+            <p>Code, debug and build with AI.</p>
+            <button class="mode-btn engineer-btn">Open Workspace &rarr;</button>
+          </div>
+
+          <!-- 3. Research Mode -->
+          <div class="mode-card research" data-mode="research">
+            <div class="mode-icon-circle research-icon">🔍</div>
+            <h3>Research Mode</h3>
+            <p>Find, analyze and summarize.</p>
+            <button class="mode-btn research-btn">Start Research &rarr;</button>
+          </div>
+
+          <!-- 4. Care Mode -->
+          <div class="mode-card care" data-mode="care">
+            <div class="mode-icon-circle care-icon">💖</div>
+            <h3>Care Mode</h3>
+            <p>Stay focused, balanced and happy.</p>
+            <button class="mode-btn care-btn">Talk with AURA &rarr;</button>
+          </div>
+
+          <!-- 5. Automation Mode -->
+          <div class="mode-card automation" data-mode="automation">
+            <div class="mode-icon-circle automation-icon">⚙️</div>
+            <h3>Automation Mode</h3>
+            <p>Turn repetitive work into one-command.</p>
+            <button class="mode-btn automation-btn">Create Automation &rarr;</button>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- RIGHT SIDEBAR -->
+      <aside class="right-sidebar">
+        
+        <!-- Today's Plan Card -->
+        <div class="widget-card today-plan-card">
+          <div class="card-header">
+            <h3><span class="card-icon">📋</span> Today's Plan</h3>
+            <a href="#" class="view-all-link">View All</a>
+          </div>
+          <div class="plan-timeline-list" id="planList">
+            <div class="plan-item completed">
+              <span class="time-tag">06:30</span>
+              <span class="plan-desc">Morning Brief with AURA</span>
+              <span class="status-check">✔</span>
+            </div>
+            <div class="plan-item completed">
+              <span class="time-tag">07:00</span>
+              <span class="plan-desc">Study: AI Automation (1 hr)</span>
+              <span class="status-check">✔</span>
+            </div>
+            <div class="plan-item in-progress">
+              <span class="time-tag">09:00</span>
+              <span class="plan-desc">AURA Project Development</span>
+              <span class="status-circle active"></span>
+            </div>
+            <div class="plan-item pending">
+              <span class="time-tag">12:00</span>
+              <span class="plan-desc">SSC Practice (30 Q)</span>
+              <span class="status-circle"></span>
+            </div>
+            <div class="plan-item pending">
+              <span class="time-tag">03:00</span>
+              <span class="plan-desc">GitHub Review & Commit</span>
+              <span class="status-circle"></span>
+            </div>
+            <div class="plan-item pending">
+              <span class="time-tag">06:00</span>
+              <span class="plan-desc">Learning: MCP / Agents</span>
+              <span class="status-circle purple"></span>
+            </div>
+            <div class="plan-item pending">
+              <span class="time-tag">09:00</span>
+              <span class="plan-desc">Daily Review with AURA</span>
+              <span class="status-circle purple"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Current Project Card -->
+        <div class="widget-card current-project-card">
+          <div class="card-header">
+            <h3><span class="card-icon">☑️</span> Current Project</h3>
+            <a href="https://github.com/Bantikevat/aura-os" target="_blank" class="view-all-link">&rarr;</a>
+          </div>
+          <div class="project-title">AURA – Personal AI Life OS</div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar-fill" style="width: 68%;"></div>
+          </div>
+          <div class="progress-pct">68%</div>
+          <div class="project-tags">
+            <span class="tag">Web App</span>
+            <span class="tag">AI Agent</span>
+            <span class="tag">Memory</span>
+            <span class="tag">Automation</span>
+          </div>
+        </div>
+
+        <!-- Quick Tools Card (8 items grid) -->
+        <div class="widget-card quick-tools-card">
+          <div class="card-header">
+            <h3><span class="card-icon">🧿</span> Quick Tools</h3>
+            <a href="#" class="view-all-link">View All</a>
+          </div>
+          <div class="tools-grid-8">
+            <div class="tool-tile" data-tool="web_search">
+              <span class="tile-icon">🔍</span>
+              <span class="tile-name">Web Search</span>
+            </div>
+            <div class="tool-tile" data-tool="youtube">
+              <span class="tile-icon youtube-red">▶️</span>
+              <span class="tile-name">YouTube</span>
+            </div>
+            <div class="tool-tile" data-tool="github">
+              <span class="tile-icon">🐙</span>
+              <span class="tile-name">GitHub</span>
+            </div>
+            <div class="tool-tile" data-tool="files">
+              <span class="tile-icon purple-icon">📁</span>
+              <span class="tile-name">Files</span>
+            </div>
+            <div class="tool-tile" data-tool="browser">
+              <span class="tile-icon cyan-icon">🌐</span>
+              <span class="tile-name">Browser Agent</span>
+            </div>
+            <div class="tool-tile" data-tool="automation">
+              <span class="tile-icon green-icon">⚡</span>
+              <span class="tile-name">Automation</span>
+            </div>
+            <div class="tool-tile" data-tool="notes">
+              <span class="tile-icon orange-icon">📝</span>
+              <span class="tile-name">Notes</span>
+            </div>
+            <div class="tool-tile" data-tool="calc">
+              <span class="tile-icon pink-icon">🧮</span>
+              <span class="tile-name">Calculator</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI Models & Status Card -->
+        <div class="widget-card models-status-card">
+          <div class="card-header">
+            <h3><span class="card-icon">🧠</span> AI Models & Status</h3>
+            <a href="#" class="view-all-link">View All</a>
+          </div>
+          <div class="models-grid-4">
+            <div class="model-chip">
+              <span class="model-icon spark-blue">✨</span>
+              <div class="model-name">Gemini 2.5</div>
+              <div class="model-state"><span class="dot-green"></span> Online</div>
+            </div>
+            <div class="model-chip">
+              <span class="model-icon gpt-green">🌀</span>
+              <div class="model-name">GPT-4o</div>
+              <div class="model-state"><span class="dot-blue"></span> Ready</div>
+            </div>
+            <div class="model-chip">
+              <span class="model-icon local-purple">⚙️</span>
+              <div class="model-name">Local Model</div>
+              <div class="model-state"><span class="dot-gray"></span> Offline</div>
+            </div>
+            <div class="model-chip">
+              <span class="model-icon vision-pink">👁️</span>
+              <div class="model-name">Vision</div>
+              <div class="model-state"><span class="dot-green"></span> Ready</div>
+            </div>
+          </div>
+        </div>
+
+      </aside>
+
     </div>
   </div>
 
-  <!-- Ready Player Me Photo Avatar Modal -->
-  <div id="rpmModal" class="modal-backdrop" style="display:none;">
-    <div class="modal-card">
-      <div class="modal-header">
-        <div class="title-row">
-          <span class="sparkle">✨</span>
-          <h3>Create Your Exact 3D Face Avatar</h3>
-        </div>
-        <button id="closeModalBtn" class="close-x">&times;</button>
-      </div>
-      <div class="modal-body">
-        <iframe id="rpmIframe" class="rpm-frame" allow="camera *; microphone *; clipboard-write"></iframe>
-      </div>
-    </div>
-  </div>
-
-  <script src="avatar.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
