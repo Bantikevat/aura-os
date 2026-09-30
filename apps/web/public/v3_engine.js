@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function speakAura(text) {
     if (!text) return;
+    recordSpokenText(text);
     synth.cancel();
 
     // Mute microphone while AURA is speaking to prevent speaker-to-mic echo feedback
@@ -217,43 +218,113 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const lower = text.toLowerCase();
 
-    // 0. Instant Stop Voice Command
-    if (lower === 'stop' || lower.includes('ruko') || lower.includes('band karo') || lower.includes('chup') || lower.includes('shant')) {
-      stopSpeakingNow();
-      return;
+    // Track recent AURA speech to permanently kill speaker-to-mic echo loops
+  const recentSpeechCache = [];
+  function recordSpokenText(text) {
+    if (!text) return;
+    const clean = text.toLowerCase().trim();
+    recentSpeechCache.push(clean);
+    if (recentSpeechCache.length > 8) recentSpeechCache.shift();
+  }
+
+  function isAuraEcho(text) {
+    if (!text) return true;
+    const clean = text.toLowerCase().trim();
+    if (clean.length < 3) return true;
+
+    // Check against recent spoken speech
+    for (const phrase of recentSpeechCache) {
+      if (clean.includes(phrase) || phrase.includes(clean)) return true;
     }
 
-    // 1. Instant App Launches (Synchronous to avoid popup blocker!)
-    if (lower.includes('youtube')) {
-      launchApp('YouTube', 'https://www.youtube.com');
-      speakAura("यूट्यूब खोल रहा हूँ।");
-      if (dialogueParagraph) dialogueParagraph.textContent = "🚀 Opening YouTube...";
-      return;
+    // Check against known system phrases
+    const echoList = [
+      'मैंने सुना',
+      'बंटी भाई',
+      'अलार्म सेट',
+      'खोल रहा हूँ',
+      'memories evaluated',
+      'processed your query',
+      'मेमोरीज',
+      'एवालुएटेड'
+    ];
+    for (const item of echoList) {
+      if (clean.includes(item)) return true;
     }
-    if (lower.includes('whatsapp')) {
-      launchApp('WhatsApp', 'https://web.whatsapp.com');
-      speakAura("व्हाट्सएप खोल रहा हूँ।");
-      if (dialogueParagraph) dialogueParagraph.textContent = "🚀 Opening WhatsApp...";
-      return;
-    }
-    if (lower.includes('github') || lower.includes('repo')) {
-      launchApp('GitHub', 'https://github.com/Bantikevat/aura-os');
-      speakAura("गिटहब खोल रहा हूँ।");
-      if (dialogueParagraph) dialogueParagraph.textContent = "🚀 Opening GitHub...";
-      return;
-    }
-    if (lower.includes('google')) {
-      launchApp('Google', 'https://www.google.com');
-      speakAura("गूगल खोल रहा हूँ।");
-      if (dialogueParagraph) dialogueParagraph.textContent = "🚀 Opening Google...";
-      return;
-    }
-    if (lower.includes('spotify') || lower.includes('music') || lower.includes('gana')) {
-      launchApp('Spotify', 'https://open.spotify.com');
-      speakAura("म्यूजिक खोल रहा हूँ।");
-      if (dialogueParagraph) dialogueParagraph.textContent = "🚀 Opening Spotify...";
-      return;
-    }
+    return false;
+  }
+
+  // 0. Instant Stop Voice Command (English + Devanagari Hindi)
+  if (
+    lower === 'stop' || 
+    lower.includes('ruko') || 
+    lower.includes('band karo') || 
+    lower.includes('chup') || 
+    lower.includes('shant') ||
+    lower.includes('स्टॉप') ||
+    lower.includes('रुको') ||
+    lower.includes('रुकिए') ||
+    lower.includes('चुप') ||
+    lower.includes('बंद')
+  ) {
+    stopSpeakingNow();
+    return;
+  }
+
+  // 1. Instant App Launches (Synchronous + Hindi Devanagari Support!)
+  if (
+    lower.includes('youtube') || 
+    lower.includes('युटुब') || 
+    lower.includes('यूट्यूब') || 
+    lower.includes('यू ट्यूब') ||
+    lower.includes('यूटुब')
+  ) {
+    launchApp('YouTube', 'https://www.youtube.com');
+    speakAura("यूट्यूब खोल रहा हूँ।");
+    if (dialogueParagraph) dialogueParagraph.textContent = "🚀 Opening YouTube...";
+    return;
+  }
+
+  if (
+    lower.includes('whatsapp') || 
+    lower.includes('व्हाट्सएप') || 
+    lower.includes('व्हाट्सअप') || 
+    lower.includes('व्हाट्सऐप') ||
+    lower.includes('वाटसप')
+  ) {
+    launchApp('WhatsApp', 'https://web.whatsapp.com');
+    speakAura("व्हाट्सएप खोल रहा हूँ।");
+    if (dialogueParagraph) dialogueParagraph.textContent = "🚀 Opening WhatsApp...";
+    return;
+  }
+
+  if (lower.includes('github') || lower.includes('repo') || lower.includes('गिटहब')) {
+    launchApp('GitHub', 'https://github.com/Bantikevat/aura-os');
+    speakAura("गिटहब खोल रहा हूँ।");
+    if (dialogueParagraph) dialogueParagraph.textContent = "🚀 Opening GitHub...";
+    return;
+  }
+
+  if (lower.includes('google') || lower.includes('गूगल') || lower.includes('गुगल')) {
+    launchApp('Google', 'https://www.google.com');
+    speakAura("गूगल खोल रहा हूँ।");
+    if (dialogueParagraph) dialogueParagraph.textContent = "🚀 Opening Google...";
+    return;
+  }
+
+  if (
+    lower.includes('spotify') || 
+    lower.includes('music') || 
+    lower.includes('gana') || 
+    lower.includes('म्यूजिक') || 
+    lower.includes('गाना') || 
+    lower.includes('गाने')
+  ) {
+    launchApp('Spotify', 'https://open.spotify.com');
+    speakAura("म्यूजिक खोल रहा हूँ।");
+    if (dialogueParagraph) dialogueParagraph.textContent = "🚀 Opening Spotify...";
+    return;
+  }
 
     if (lower.includes('camera') || lower.includes('webcam')) {
       toggleWebcam();
@@ -336,13 +407,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     recognition.onresult = (e) => {
       if (isSpeaking) {
-        console.log('[MIC ECHO IGNORED - AURA WAS SPEAKING]');
+        console.log('[MIC ECHO DROPPED - AURA SPEAKING]');
         return;
       }
-
       const lastIdx = e.results.length - 1;
       const transcript = e.results[lastIdx][0].transcript.trim();
-      if (!transcript) return;
+      if (!transcript || isAuraEcho(transcript)) {
+        console.log('[DROPPED ECHO TRANSCRIPT]:', transcript);
+        return;
+      }
 
       console.log('[VOICE RECOGNIZED]', transcript);
       if (voiceCommandInput) voiceCommandInput.value = transcript;

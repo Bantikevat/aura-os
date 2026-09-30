@@ -92,6 +92,23 @@ class AuraEngine {
     const prompt = (userPrompt || '').trim();
     const pLower = prompt.toLowerCase();
 
+    // 0. System Self-Echo Barrier (Drop speaker-to-mic loops before any matching)
+    if (
+      pLower.includes('मैंने सुना') ||
+      pLower.includes('अलार्म सेट कर दिया गया है') ||
+      pLower.includes('खोल रहा हूँ') ||
+      pLower.includes('processed your query') ||
+      pLower.includes('memories evaluated') ||
+      pLower.includes('मेमोरीज') ||
+      pLower.includes('एवालुएटेड')
+    ) {
+      return {
+        status: 'ignored',
+        intent: 'self_echo_filtered',
+        response: null
+      };
+    }
+
     // 1. Sensitive / Destructive Actions Check (NIST Policy Requirement)
     if (pLower.startsWith('delete') || pLower.startsWith('remove') || pLower.includes('drop database') || pLower.includes('erase')) {
       if (!userApproved) {
@@ -244,8 +261,19 @@ class AuraEngine {
       };
     }
 
-    // 6.1. Stop Speech Command ("Stop", "Ruko", "Band karo", "Chup")
-    if (pLower === 'stop' || pLower.includes('ruko') || pLower.includes('band karo') || pLower.includes('chup') || pLower.includes('shant')) {
+    // 6.1. Stop Speech Command (English + Devanagari Hindi)
+    if (
+      pLower === 'stop' || 
+      pLower.includes('ruko') || 
+      pLower.includes('band karo') || 
+      pLower.includes('chup') || 
+      pLower.includes('shant') ||
+      pLower.includes('स्टॉप') ||
+      pLower.includes('रुको') ||
+      pLower.includes('रुकिए') ||
+      pLower.includes('चुप') ||
+      pLower.includes('बंद करो')
+    ) {
       return {
         status: 'verified_complete',
         intent: 'stop_speech',
@@ -254,8 +282,14 @@ class AuraEngine {
       };
     }
 
-    // 6.2. Real Web App Launchers ("Open YouTube", "Open WhatsApp", "Open GitHub", "Open Google")
-    if (pLower.includes('youtube')) {
+    // 6.2. Real Web App Launchers (English + Devanagari Hindi)
+    if (
+      pLower.includes('youtube') || 
+      pLower.includes('युटुब') || 
+      pLower.includes('यूट्यूब') || 
+      pLower.includes('यू ट्यूब') ||
+      pLower.includes('यूटुब')
+    ) {
       return {
         status: 'verified_complete',
         intent: 'open_url',
@@ -265,7 +299,14 @@ class AuraEngine {
         action: 'open_url'
       };
     }
-    if (pLower.includes('whatsapp')) {
+
+    if (
+      pLower.includes('whatsapp') || 
+      pLower.includes('व्हाट्सएप') || 
+      pLower.includes('व्हाट्सअप') || 
+      pLower.includes('व्हाट्सऐप') ||
+      pLower.includes('वाटसप')
+    ) {
       return {
         status: 'verified_complete',
         intent: 'open_url',
@@ -275,7 +316,8 @@ class AuraEngine {
         action: 'open_url'
       };
     }
-    if (pLower.includes('github') || pLower.includes('repo')) {
+
+    if (pLower.includes('github') || pLower.includes('repo') || pLower.includes('गिटहब')) {
       return {
         status: 'verified_complete',
         intent: 'open_url',
@@ -285,7 +327,8 @@ class AuraEngine {
         action: 'open_url'
       };
     }
-    if (pLower.includes('google')) {
+
+    if (pLower.includes('google') || pLower.includes('गूगल') || pLower.includes('गुगल')) {
       return {
         status: 'verified_complete',
         intent: 'open_url',
@@ -394,7 +437,10 @@ class AuraEngine {
 
     // 8. Filter out audio self-echoes or meaningless fragments
     if (
-      pLower.includes('processed your query') || 
+      pLower.includes('processed your query') ||
+      pLower.includes('मैंने सुना') ||
+      pLower.includes('अलार्म सेट कर दिया गया है') ||
+      pLower.includes('खोल रहा हूँ') || 
       pLower.includes('memories evaluated') || 
       pLower.includes('मेमोरीज') || 
       pLower.includes('एवालुएटेड') ||
