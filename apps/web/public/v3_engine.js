@@ -28,6 +28,9 @@ document.addEventListener('DOMContentLoaded', () => {
       try { recognitionInstance.abort(); } catch {}
     }
 
+    const stopBtn = document.getElementById('auraFloatingStopBtn');
+    if (stopBtn) stopBtn.style.display = 'flex';
+
     const utter = new SpeechSynthesisUtterance(text);
     if (hindiVoice) utter.voice = hindiVoice;
     utter.rate = 1.0;
@@ -39,6 +42,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     utter.onend = () => {
       if (wave) wave.style.opacity = '0.7';
+      const stopBtn = document.getElementById('auraFloatingStopBtn');
+      if (stopBtn) stopBtn.style.display = 'none';
       // 500ms cool-down buffer after speaker stops before re-arming the microphone
       setTimeout(() => {
         isSpeaking = false;
@@ -61,6 +66,20 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // 1. Live Date & Time
+  
+  // Global Stop Button Handler
+  const auraFloatingStopBtn = document.getElementById('auraFloatingStopBtn');
+  function stopSpeakingNow() {
+    synth.cancel();
+    isSpeaking = false;
+    if (auraFloatingStopBtn) auraFloatingStopBtn.style.display = 'none';
+    if (dialogueParagraph) dialogueParagraph.textContent = '⏹️ AURA Stopped.';
+    console.log('[AURA SPEECH STOPPED BY USER]');
+  }
+  if (auraFloatingStopBtn) {
+    auraFloatingStopBtn.addEventListener('click', stopSpeakingNow);
+  }
+
   const topLiveDate = document.getElementById('topLiveDate');
   const topLiveTime = document.getElementById('topLiveTime');
 
@@ -167,6 +186,27 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Real Action Execution Engine
+  
+  // Instant App Launcher with Popup Fallback Toast
+  function launchApp(appName, url) {
+    // 1. Synchronously open window
+    const newTab = window.open(url, '_blank');
+
+    // 2. Display prominent glowing launcher toast
+    const toast = document.getElementById('auraAppLaunchToast');
+    if (toast) {
+      toast.innerHTML = `
+        <div class="toast-content">
+          <span class="toast-icon">🚀</span>
+          <span class="toast-msg">Opening <b>${appName}</b>...</span>
+          <a href="${url}" target="_blank" class="toast-btn">Open ${appName} ↗</a>
+        </div>
+      `;
+      toast.style.display = 'flex';
+      setTimeout(() => { toast.style.display = 'none'; }, 6000);
+    }
+  }
+
   async function handleCommand(overrideText) {
     const text = (overrideText || (voiceCommandInput ? voiceCommandInput.value : '')).trim();
     if (!text) return;
@@ -174,7 +214,47 @@ document.addEventListener('DOMContentLoaded', () => {
     if (dialogueParagraph) dialogueParagraph.textContent = text;
 
     // Quick local overrides
+
     const lower = text.toLowerCase();
+
+    // 0. Instant Stop Voice Command
+    if (lower === 'stop' || lower.includes('ruko') || lower.includes('band karo') || lower.includes('chup') || lower.includes('shant')) {
+      stopSpeakingNow();
+      return;
+    }
+
+    // 1. Instant App Launches (Synchronous to avoid popup blocker!)
+    if (lower.includes('youtube')) {
+      launchApp('YouTube', 'https://www.youtube.com');
+      speakAura("यूट्यूब खोल रहा हूँ।");
+      if (dialogueParagraph) dialogueParagraph.textContent = "🚀 Opening YouTube...";
+      return;
+    }
+    if (lower.includes('whatsapp')) {
+      launchApp('WhatsApp', 'https://web.whatsapp.com');
+      speakAura("व्हाट्सएप खोल रहा हूँ।");
+      if (dialogueParagraph) dialogueParagraph.textContent = "🚀 Opening WhatsApp...";
+      return;
+    }
+    if (lower.includes('github') || lower.includes('repo')) {
+      launchApp('GitHub', 'https://github.com/Bantikevat/aura-os');
+      speakAura("गिटहब खोल रहा हूँ।");
+      if (dialogueParagraph) dialogueParagraph.textContent = "🚀 Opening GitHub...";
+      return;
+    }
+    if (lower.includes('google')) {
+      launchApp('Google', 'https://www.google.com');
+      speakAura("गूगल खोल रहा हूँ।");
+      if (dialogueParagraph) dialogueParagraph.textContent = "🚀 Opening Google...";
+      return;
+    }
+    if (lower.includes('spotify') || lower.includes('music') || lower.includes('gana')) {
+      launchApp('Spotify', 'https://open.spotify.com');
+      speakAura("म्यूजिक खोल रहा हूँ।");
+      if (dialogueParagraph) dialogueParagraph.textContent = "🚀 Opening Spotify...";
+      return;
+    }
+
     if (lower.includes('camera') || lower.includes('webcam')) {
       toggleWebcam();
       return;

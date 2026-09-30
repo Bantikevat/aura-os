@@ -244,13 +244,34 @@ class AuraEngine {
       };
     }
 
-    // 6.2. Real Web App Launchers ("Open YouTube", "Open GitHub", "Open Google")
+    // 6.1. Stop Speech Command ("Stop", "Ruko", "Band karo", "Chup")
+    if (pLower === 'stop' || pLower.includes('ruko') || pLower.includes('band karo') || pLower.includes('chup') || pLower.includes('shant')) {
+      return {
+        status: 'verified_complete',
+        intent: 'stop_speech',
+        action: 'stop',
+        response: null
+      };
+    }
+
+    // 6.2. Real Web App Launchers ("Open YouTube", "Open WhatsApp", "Open GitHub", "Open Google")
     if (pLower.includes('youtube')) {
       return {
         status: 'verified_complete',
         intent: 'open_url',
         url: 'https://www.youtube.com',
-        response: 'बंटी भाई, यूट्यूब खोल रहा हूँ!',
+        appName: 'YouTube',
+        response: 'यूट्यूब खोल रहा हूँ।',
+        action: 'open_url'
+      };
+    }
+    if (pLower.includes('whatsapp')) {
+      return {
+        status: 'verified_complete',
+        intent: 'open_url',
+        url: 'https://web.whatsapp.com',
+        appName: 'WhatsApp',
+        response: 'व्हाट्सएप खोल रहा हूँ।',
         action: 'open_url'
       };
     }
@@ -259,7 +280,8 @@ class AuraEngine {
         status: 'verified_complete',
         intent: 'open_url',
         url: 'https://github.com/Bantikevat/aura-os',
-        response: 'बंटी भाई, आपकी AURA गिटहब रिपॉजिटरी खोल रहा हूँ!',
+        appName: 'GitHub',
+        response: 'गिटहब खोल रहा हूँ।',
         action: 'open_url'
       };
     }
@@ -268,7 +290,18 @@ class AuraEngine {
         status: 'verified_complete',
         intent: 'open_url',
         url: 'https://www.google.com',
-        response: 'गूगल सर्च खोल रहा हूँ बंटी भाई!',
+        appName: 'Google',
+        response: 'गूगल खोल रहा हूँ।',
+        action: 'open_url'
+      };
+    }
+    if (pLower.includes('spotify') || pLower.includes('music') || pLower.includes('gana')) {
+      return {
+        status: 'verified_complete',
+        intent: 'open_url',
+        url: 'https://open.spotify.com',
+        appName: 'Spotify',
+        response: 'म्यूजिक खोल रहा हूँ।',
         action: 'open_url'
       };
     }
@@ -276,7 +309,7 @@ class AuraEngine {
     // 6.3. Real Alarm & Timer ("Alarm set kar do 5 minute", "Set alarm for 10 minutes")
     if (pLower.includes('alarm') || pLower.includes('timer') || pLower.includes('अलार्म') || pLower.includes('टाइमर')) {
       const matchMin = prompt.match(/(\d+)\s*(min|minute|मिनट)/i);
-      const minutes = matchMin ? parseInt(matchMin[1], 10) : 5;
+      const minutes = matchMin ? parseInt(matchMin[1], 10) : 2;
       
       this.notifications.unshift({
         id: 'notif_alarm_' + Date.now(),
@@ -292,7 +325,7 @@ class AuraEngine {
         status: 'verified_complete',
         intent: 'set_alarm',
         minutes,
-        response: `बंटी भाई, ${minutes} मिनट का अलार्म सेट कर दिया गया है। समय पूरा होते ही मैं आपको बीप और आवाज़ के साथ अलर्ट कर दूंगा।`,
+        response: `${minutes} मिनट का अलार्म सेट कर दिया गया है।`,
         action: 'set_alarm'
       };
     }
@@ -300,17 +333,11 @@ class AuraEngine {
     // 6.4. Real System Time ("Time bata do", "What is the time", "Time kya hua")
     if (pLower.includes('time') || pLower.includes('समय') || pLower.includes('घड़ी') || pLower.includes('kitne baje')) {
       const now = new Date();
-      let h = now.getHours();
-      const m = now.getMinutes();
-      const ampm = h >= 12 ? 'दोपहर/शाम' : 'सुबह';
-      h = h % 12 || 12;
-      const timeInWords = `${ampm} के ${h} बजकर ${m} मिनट`;
-
       return {
         status: 'verified_complete',
         intent: 'tell_time',
-        formattedTime: now.toLocaleTimeString(),
-        response: `बंटी भाई, अभी का समय ${timeInWords} हो रहा है।`,
+        formattedTime: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        response: `अभी समय ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} है।`,
         action: 'tell_time'
       };
     }
@@ -322,7 +349,7 @@ class AuraEngine {
       return {
         status: 'verified_complete',
         intent: 'status_overview',
-        response: `बंटी भाई, AURA बिल्कुल एक्टिव और आपकी सेवा में रेडी है। आपके कुल ${goalsCount} एक्टिव गोल्स/टास्क्स पाइपलाइन में हैं, और मेमोरी स्टोर में ${memoriesCount} यादें सुरक्षित हैं। सिस्टम 100% स्मूथ चल रहा है!`,
+        response: `AURA एक्टिव है। ${goalsCount} टास्क्स और ${memoriesCount} यादें सेफ़ हैं।`,
         action: 'status_overview'
       };
     }

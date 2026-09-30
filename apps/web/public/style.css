@@ -507,3 +507,75 @@ body.light-theme {
   --text-muted: #e2e8f0;
   --border-cyan: rgba(56, 189, 248, 0.5);
 }
+
+/* Floating Stop Speaking Button */
+.aura-floating-stop-btn {
+  position: fixed !important;
+  bottom: 2.5rem !important;
+  right: 2.5rem !important;
+  z-index: 99999 !important;
+  background: linear-gradient(135deg, #ef4444, #b91c1c) !important;
+  color: #ffffff !important;
+  border: 2px solid rgba(255, 255, 255, 0.4) !important;
+  border-radius: 999px !important;
+  padding: 12px 26px !important;
+  font-weight: 800 !important;
+  font-size: 0.95rem !important;
+  letter-spacing: 0.05em !important;
+  cursor: pointer !important;
+  box-shadow: 0 10px 35px rgba(239, 68, 68, 0.7), 0 0 20px rgba(239, 68, 68, 0.4) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  transition: transform 0.15s ease !important;
+}
+
+.aura-floating-stop-btn:hover {
+  transform: scale(1.06) !important;
+  background: #dc2626 !important;
+}
+
+/* Instant App Launch Toast */
+.aura-app-launch-toast {
+  position: fixed !important;
+  top: 72px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  z-index: 99999 !important;
+  background: rgba(10, 16, 31, 0.96) !important;
+  backdrop-filter: blur(20px) !important;
+  border: 1.5px solid #38bdf8 !important;
+  border-radius: 14px !important;
+  padding: 10px 20px !important;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.8), 0 0 25px rgba(56, 189, 248, 0.35) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 14px !important;
+  animation: popoverFadeIn 0.2s ease !important;
+}
+
+.toast-content {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+
+.toast-icon { font-size: 1.3rem !important; }
+.toast-msg { color: #f8fafc !important; font-size: 0.9rem !important; }
+.toast-msg b { color: #38bdf8 !important; }
+
+.toast-btn {
+  background: #38bdf8 !important;
+  color: #040711 !important;
+  font-weight: 700 !important;
+  font-size: 0.8rem !important;
+  padding: 6px 14px !important;
+  border-radius: 8px !important;
+  text-decoration: none !important;
+  transition: all 0.15s ease !important;
+}
+
+.toast-btn:hover {
+  background: #7dd3fc !important;
+  transform: translateY(-1px) !important;
+}
