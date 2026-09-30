@@ -3,454 +3,80 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AURA — Personal AI Life OS v1.0</title>
+  <title>AURA — Banti's 3D AI Avatar</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <!-- Three.js 3D Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
-  <div class="aura-app-container">
+  <!-- Clean Aurora Glow Background -->
+  <div class="ambient-glow"></div>
 
-    <!-- TOP NAVIGATION BAR -->
-    <header class="top-header">
-      <div class="brand-box">
-        <div class="logo-aura-glyph">
-          <svg viewBox="0 0 36 36" fill="none">
-            <path d="M18 3L3 31H11L18 16L25 31H33L18 3Z" fill="url(#brandGrad)"/>
-            <path d="M12 24H24L18 13L12 24Z" fill="#070c18"/>
-            <defs>
-              <linearGradient id="brandGrad" x1="3" y1="3" x2="33" y2="31" gradientUnits="userSpaceOnUse">
-                <stop stop-color="#38bdf8"/>
-                <stop offset="0.5" stop-color="#818cf8"/>
-                <stop offset="1" stop-color="#c084fc"/>
-              </linearGradient>
-            </defs>
-          </svg>
-        </div>
-        <div class="brand-text">
-          <h1>AURA</h1>
-          <span>Personal AI Life OS <span class="version-tag">v1.0</span></span>
-        </div>
+  <!-- Header -->
+  <header class="app-header">
+    <div class="brand">
+      <div class="cyan-orb"></div>
+      <div class="brand-titles">
+        <h1>AURA 3D</h1>
+        <span>बंटी का पर्सनल 3D लाइफ अवतार</span>
+      </div>
+    </div>
+
+    <!-- Status & Face Uploader -->
+    <div class="header-right">
+      <div class="status-pill">
+        <span class="pulse-dot"></span> <span id="statusLabel">3D AVATAR ONLINE</span>
+      </div>
+      <button id="uploadFaceBtn" class="action-pill-btn">📷 अपनी फ़ोटो बदलें</button>
+      <input type="file" id="faceInput" accept="image/*" style="display:none;">
+    </div>
+  </header>
+
+  <!-- Main 3D Viewport -->
+  <main class="stage-viewport">
+    
+    <!-- 3D WebGL Canvas Container -->
+    <div id="threeContainer" class="webgl-canvas-box">
+      <!-- Floating Instructions Hint -->
+      <div class="viewport-tip">
+        <span>🖱️ माउस से 3D अवतार को 360° घुमाएं और ज़ूम करें</span>
+      </div>
+    </div>
+
+    <!-- Floating Subtitle Dialogue (Hindi) -->
+    <div class="speech-dialogue-bubble" id="speechBubble">
+      <div class="speaker-label">AURA (बंटी का अवतार):</div>
+      <p id="subtitlesText">"नमस्ते बंटी भाई! अब कोई कन्फ़्यूज़न नहीं। मैं आपका असली 3D अवतार हूँ। मैं आपके साथ मुँह हिलाकर (Lip-sync) बोलूँगा और हाथ हिलाकर बात करूँगा।"</p>
+    </div>
+
+    <!-- Bottom Controls & Action Bar -->
+    <div class="bottom-action-dock">
+      
+      <!-- Hand Gestures & Movements -->
+      <div class="gestures-strip">
+        <span class="gestures-label">हाथ के मूवमेंट:</span>
+        <button class="gesture-btn" data-anim="wave">👋 हाथ हिलाओ (Wave)</button>
+        <button class="gesture-btn" data-anim="talk">🗣️ बात करते हुए हाथ हिलाओ</button>
+        <button class="gesture-btn" data-anim="think">🤔 सोचने की मुद्रा (Think)</button>
+        <button class="gesture-btn" data-anim="thumbs">👍 हाँ बोलो (Thumbs Up)</button>
+        <button class="gesture-btn active" data-anim="idle">🧘 शांत खड़े रहो (Idle)</button>
       </div>
 
-      <!-- Center Search Bar -->
-      <div class="header-search">
-        <span class="search-lens">🔍</span>
-        <input type="text" id="globalSearchInput" placeholder="Ask AURA anything...">
-        <button class="search-mic-btn" id="searchMicBtn">🎙️</button>
+      <!-- Dialogue Input Bar -->
+      <div class="dialogue-input-row">
+        <input type="text" id="userInput" placeholder="मुझसे हिंदी या इंग्लिश में कुछ भी बुलवाएँ..." value="नमस्ते बंटी! मैं तुम्हारा 3D अवतार हूँ।">
+        <button id="speakActionBtn" class="glow-send-btn">🔊 बुलवाएं (Speak)</button>
+        <button id="micActionBtn" class="mic-glow-btn" title="माइक से बोलें">🎙️ माइक</button>
       </div>
-
-      <!-- Right Actions & Clock -->
-      <div class="header-right-meta">
-        <button class="meta-pill-btn vision-btn">👁️ Vision ▾</button>
-        <button class="meta-icon-btn notif-btn">🔔<span class="badge-num">3</span></button>
-        <button class="meta-icon-btn theme-btn" id="themeToggleBtn">☀️</button>
-        <button class="meta-pill-btn focus-btn">⚙️ Focus Mode ▾</button>
-
-        <div class="live-clock-card">
-          <div class="clock-date" id="headerDate">Tue, 30 Sep 2026</div>
-          <div class="clock-time" id="headerTime">07:24 AM</div>
-        </div>
-      </div>
-    </header>
-
-    <!-- 3-COLUMN BODY: LEFT SIDEBAR + CENTER COMMAND HUB + RIGHT WIDGETS -->
-    <div class="hub-body-grid">
-
-      <!-- LEFT SIDEBAR -->
-      <aside class="left-nav-bar">
-        <nav class="side-menu">
-          <a href="#" class="menu-item active" data-page="home"><span class="m-icon">🏠</span> Home</a>
-          <a href="#" class="menu-item" data-page="chat"><span class="m-icon">💬</span> Chat</a>
-          <a href="#" class="menu-item" data-page="tasks"><span class="m-icon">☑️</span> Tasks</a>
-          <a href="#" class="menu-item" data-page="goals"><span class="m-icon">🎯</span> Goals</a>
-          <a href="#" class="menu-item" data-page="learning"><span class="m-icon">📚</span> Learning</a>
-          <a href="#" class="menu-item" data-page="projects"><span class="m-icon">📁</span> Projects</a>
-          <a href="#" class="menu-item" data-page="research"><span class="m-icon">🔬</span> Research</a>
-          <a href="#" class="menu-item" data-page="automation"><span class="m-icon">⚙️</span> Automation</a>
-          <a href="#" class="menu-item" data-page="browser_agent"><span class="m-icon">🌐</span> Browser Agent</a>
-          <a href="#" class="menu-item" data-page="computer_use"><span class="m-icon">🖥️</span> Computer Use</a>
-          <a href="#" class="menu-item" data-page="memory"><span class="m-icon">⏱️</span> Memory</a>
-          <a href="#" class="menu-item" data-page="files"><span class="m-icon">📄</span> Files & Docs</a>
-          <a href="#" class="menu-item" data-page="calendar"><span class="m-icon">📅</span> Calendar</a>
-          <a href="#" class="menu-item" data-page="devices"><span class="m-icon">📱</span> Devices</a>
-          <a href="#" class="menu-item" data-page="avatar"><span class="m-icon">👤</span> 3D Avatar</a>
-          <a href="#" class="menu-item" data-page="settings"><span class="m-icon">⚙️</span> Settings</a>
-        </nav>
-
-        <!-- User Profile Card -->
-        <div class="user-id-card">
-          <div class="id-top">
-            <img src="aura-master.jpg" alt="Banti Kevat" class="user-id-avatar">
-            <div class="id-info">
-              <h4>Banti Kevat</h4>
-              <span class="sub-space">Personal Space</span>
-              <span class="online-indicator"><span class="green-glow-dot"></span> Online</span>
-            </div>
-            <button class="settings-gear-btn">⚙️</button>
-          </div>
-          <div class="id-quote">
-            "One Assistant.<br>All Your Possibilities."
-          </div>
-        </div>
-      </aside>
-
-      <!-- CENTER HUB: HERO STAGE + COMMAND BAR + MODES -->
-      <main class="center-hub">
-
-        <!-- Hero Stage with Developer Desk, Banti Avatar, Multimonitors -->
-        <div class="hero-command-stage">
-          <img src="aura-master.jpg" alt="AURA Master Stage" class="hero-stage-bg">
-
-          <!-- Left Overlay: Live Presence & Screen Tracking -->
-          <div class="stage-left-overlay">
-            <!-- Live Presence Widget -->
-            <div class="presence-card">
-              <div class="presence-header">
-                <span class="mic-glyph">🎙️</span>
-                <span class="presence-title">Live Presence</span>
-                <span class="presence-online-badge"><span class="dot-sm"></span> Online</span>
-              </div>
-              <ul class="presence-status-list">
-                <li><span class="dot-blue"></span> Listening</li>
-                <li><span class="dot-yellow"></span> Thinking</li>
-                <li><span class="dot-cyan"></span> Speaking</li>
-                <li><span class="dot-green"></span> Working</li>
-                <li><span class="dot-purple"></span> Watching (Camera)</li>
-                <li><span class="dot-pink"></span> Following You</li>
-              </ul>
-              <!-- Audio Wave Visualizer -->
-              <div class="audio-wave-bars" id="audioWave">
-                <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
-              </div>
-            </div>
-
-            <!-- Screen View Widget -->
-            <div class="screen-view-card">
-              <div class="screen-view-header">AURA can see your screen</div>
-              <div class="screen-preview-box">
-                <div class="code-lines-mock">
-                  <code>function auraCore() {</code>
-                  <code>  const memory = new Memory();</code>
-                  <code>  return memory.recall();</code>
-                  <code>}</code>
-                </div>
-              </div>
-              <div class="analyzing-text">Analyzing your activity...</div>
-            </div>
-          </div>
-
-          <!-- Speech Bubble Greeting -->
-          <div class="hero-speech-bubble" id="heroSpeechBubble">
-            <h3>Hi Banti! 👋</h3>
-            <p>I'm AURA, your personal AI. I'm here with you for learning, projects, work and life.</p>
-            <span class="bubble-sub">What shall we do today?</span>
-          </div>
-
-          <!-- Interactive Command Pill Bar -->
-          <div class="floating-command-bar">
-            <div class="spark-icon-btn">✨</div>
-            <input type="text" id="masterCommandInput" placeholder="Talk to AURA or type your command..." value="Banti, AURA Life OS bilkul active hai!">
-            <button class="attach-clip-btn" title="Attach file">📎</button>
-            <button class="voice-cmd-btn" id="masterMicBtn" title="Speak to AURA">🎙️</button>
-            <button class="send-cmd-btn" id="masterSendBtn">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2">
-                <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
-              </svg>
-            </button>
-          </div>
-
-        </div>
-
-        <!-- Action Quick Buttons Row (9 Buttons) -->
-        <div class="quick-action-strip">
-          <button class="strip-btn" data-act="teach"><span class="btn-icon">📖</span> Teach Me</button>
-          <button class="strip-btn active" data-act="code"><span class="btn-icon">&lt;/&gt;</span> Write Code</button>
-          <button class="strip-btn" data-act="research"><span class="btn-icon">🔍</span> Research</button>
-          <button class="strip-btn" data-act="browser"><span class="btn-icon">🌐</span> Browse Web</button>
-          <button class="strip-btn" data-act="task"><span class="btn-icon">☑️</span> Create Task</button>
-          <button class="strip-btn" data-act="automate"><span class="btn-icon">⚙️</span> Automate</button>
-          <button class="strip-btn" data-act="project"><span class="btn-icon">📁</span> Open Project</button>
-          <button class="strip-btn" data-act="analyze"><span class="btn-icon">📊</span> Analyze</button>
-          <button class="strip-btn" data-act="more"><span class="btn-icon">🎛️</span> More Tools</button>
-        </div>
-
-        <!-- BOTTOM MASTER CARDS GRID (6 CARDS) -->
-        <div class="bottom-master-grid">
-
-          <!-- 1. 3D Avatar Card -->
-          <div class="bottom-card avatar-card">
-            <div class="card-head">
-              <h4><span class="c-glyph">👤</span> 3D Avatar</h4>
-            </div>
-            <div class="avatar-card-body">
-              <img src="aura-master.jpg" alt="Avatar Thumb" class="card-avatar-img">
-              <div class="avatar-features-list">
-                <span>🗣️ Talk</span>
-                <span>😊 Expressions</span>
-                <span>🎙️ Your Voice</span>
-                <span>👀 Follow You</span>
-                <span>🟢 Live Presence</span>
-              </div>
-            </div>
-            <button class="card-action-btn" id="customizeAvatarBtn">Customize Avatar &rarr;</button>
-          </div>
-
-          <!-- 2. Modes Card -->
-          <div class="bottom-card modes-card">
-            <div class="card-head">
-              <h4><span class="c-glyph">🎛️</span> Modes</h4>
-              <span class="head-sublink">Switch Mode</span>
-            </div>
-            <ul class="modes-list-5">
-              <li class="mode-item" data-mode="friend">
-                <strong>Friend Mode</strong> <span>Casual & Friendly</span>
-              </li>
-              <li class="mode-item" data-mode="teacher">
-                <strong>Teacher Mode</strong> <span>Explain & Teach</span>
-              </li>
-              <li class="mode-item active" data-mode="engineer">
-                <strong>Engineer Mode</strong> <span>Code & Debug</span>
-              </li>
-              <li class="mode-item" data-mode="research">
-                <strong>Research Mode</strong> <span>Find & Analyze</span>
-              </li>
-              <li class="mode-item" data-mode="care">
-                <strong>Care Mode</strong> <span>Support & Motivate</span>
-              </li>
-            </ul>
-          </div>
-
-          <!-- 3. Memory Card -->
-          <div class="bottom-card memory-card">
-            <div class="card-head">
-              <h4><span class="c-glyph">⏱️</span> Memory</h4>
-            </div>
-            <p class="card-subnote">Everything about you</p>
-            <ul class="memory-categories-list">
-              <li>💬 Conversations</li>
-              <li>📝 Notes & Learnings</li>
-              <li>📄 Documents</li>
-              <li>⚖️ Decisions</li>
-              <li>⚙️ Preferences</li>
-              <li>👥 People</li>
-            </ul>
-            <button class="card-action-btn" id="searchMemoryBtn">🔍 Search Memory &rarr;</button>
-          </div>
-
-          <!-- 4. Tools & Agents Card -->
-          <div class="bottom-card agents-card">
-            <div class="card-head">
-              <h4><span class="c-glyph">🛠️</span> Tools & Agents</h4>
-            </div>
-            <p class="card-subnote">Real actions, real work</p>
-            <ul class="agents-list">
-              <li>
-                <strong>🌐 Browser Agent</strong>
-                <span>Open, Click, Automate</span>
-              </li>
-              <li>
-                <strong>🖥️ Computer Use</strong>
-                <span>Operate Desktop/Apps</span>
-              </li>
-              <li>
-                <strong>📄 File Agent</strong>
-                <span>Read, Summarize, Organize</span>
-              </li>
-              <li>
-                <strong>🔍 Research Agent</strong>
-                <span>Find, Compare, Report</span>
-              </li>
-              <li>
-                <strong>⚙️ Automation Agent</strong>
-                <span>Workflows, n8n, APIs</span>
-              </li>
-            </ul>
-          </div>
-
-          <!-- 5. Live Status Card -->
-          <div class="bottom-card status-card">
-            <div class="card-head">
-              <h4><span class="c-glyph">🛡️</span> Live Status</h4>
-            </div>
-            <p class="card-subnote">All Systems Operational</p>
-            <ul class="status-checklist">
-              <li>✔ AI Models <span class="badge-online">Online</span></li>
-              <li>✔ Voice Engine <span class="badge-online">Online</span></li>
-              <li>✔ Vision Engine <span class="badge-online">Online</span></li>
-              <li>✔ Browser Agent <span class="badge-online">Online</span></li>
-              <li>✔ Automation <span class="badge-online">Online</span></li>
-              <li>✔ Memory DB <span class="badge-online">Online</span></li>
-              <li>✔ Cloud Services <span class="badge-online">Online</span></li>
-            </ul>
-          </div>
-
-          <!-- 6. Quick Access Card -->
-          <div class="bottom-card quick-access-card">
-            <div class="card-head">
-              <h4><span class="c-glyph">⚡</span> Quick Access</h4>
-            </div>
-            <div class="apps-grid-8">
-              <a href="https://github.com/Bantikevat/aura-os" target="_blank" class="app-icon-tile github" title="GitHub">
-                <span class="app-symbol">🐙</span>
-                <span class="app-label">GitHub</span>
-              </a>
-              <a href="https://youtube.com" target="_blank" class="app-icon-tile youtube" title="YouTube">
-                <span class="app-symbol red">▶️</span>
-                <span class="app-label">YouTube</span>
-              </a>
-              <a href="https://drive.google.com" target="_blank" class="app-icon-tile drive" title="Drive">
-                <span class="app-symbol yellow">📁</span>
-                <span class="app-label">Drive</span>
-              </a>
-              <div class="app-icon-tile vscode" id="btnVSCode" title="VS Code">
-                <span class="app-symbol blue">&lt;/&gt;</span>
-                <span class="app-label">VS Code</span>
-              </div>
-              <div class="app-icon-tile notion" id="btnNotion" title="Notion">
-                <span class="app-symbol">📓</span>
-                <span class="app-label">Notion</span>
-              </div>
-              <a href="https://mail.google.com" target="_blank" class="app-icon-tile gmail" title="Gmail">
-                <span class="app-symbol red">✉️</span>
-                <span class="app-label">Gmail</span>
-              </a>
-              <div class="app-icon-tile calendar" id="btnCalendar" title="Calendar">
-                <span class="app-symbol">📅</span>
-                <span class="app-label">Calendar</span>
-              </div>
-              <a href="https://maps.google.com" target="_blank" class="app-icon-tile maps" title="Maps">
-                <span class="app-symbol green">📍</span>
-                <span class="app-label">Maps</span>
-              </a>
-            </div>
-            <button class="add-more-apps-btn" id="addMoreAppsBtn">Add More +</button>
-          </div>
-
-        </div>
-
-      </main>
-
-      <!-- RIGHT WIDGETS COLUMN -->
-      <aside class="right-widgets-col">
-
-        <!-- Card 1: Today's Plan -->
-        <div class="side-widget-box plan-widget">
-          <div class="widget-top">
-            <h3><span class="w-icon">📋</span> Today's Plan</h3>
-            <a href="#" class="widget-link">View All &gt;</a>
-          </div>
-          <div class="plan-schedule-list" id="scheduleList">
-            <div class="sched-item done">
-              <span class="s-time">06:30</span>
-              <span class="s-desc">Morning Brief with AURA</span>
-              <span class="s-check">✔</span>
-            </div>
-            <div class="sched-item done">
-              <span class="s-time">07:00</span>
-              <span class="s-desc">Study: AI Automation (1 hr)</span>
-              <span class="s-check">✔</span>
-            </div>
-            <div class="sched-item current">
-              <span class="s-time">09:00</span>
-              <span class="s-desc">AURA Project Development</span>
-              <span class="s-circle active"></span>
-            </div>
-            <div class="sched-item">
-              <span class="s-time">12:00</span>
-              <span class="s-desc">SSC Practice (30 Q)</span>
-              <span class="s-circle"></span>
-            </div>
-            <div class="sched-item">
-              <span class="s-time">15:00</span>
-              <span class="s-desc">GitHub Review & Commit</span>
-              <span class="s-circle"></span>
-            </div>
-            <div class="sched-item">
-              <span class="s-time">17:00</span>
-              <span class="s-desc">Learning: MCP / Agents</span>
-              <span class="s-circle purple"></span>
-            </div>
-            <div class="sched-item">
-              <span class="s-time">20:00</span>
-              <span class="s-desc">Personal Project Planning</span>
-              <span class="s-circle purple"></span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Card 2: Interactive Calendar (September 2026) -->
-        <div class="side-widget-box calendar-widget">
-          <div class="widget-top">
-            <h3><span class="w-icon">📅</span> Calendar</h3>
-            <div class="cal-nav"><span id="calPrev">&lt;</span> <span id="calNext">&gt;</span></div>
-          </div>
-          <div class="cal-month-title">September 2026</div>
-          <div class="mini-calendar-grid">
-            <span class="c-head">Sun</span><span class="c-head">Mon</span><span class="c-head">Tue</span><span class="c-head">Wed</span><span class="c-head">Thu</span><span class="c-head">Fri</span><span class="c-head">Sat</span>
-            <span class="c-day muted">31</span><span class="c-day">1</span><span class="c-day">2</span><span class="c-day">3</span><span class="c-day">4</span><span class="c-day">5</span><span class="c-day">6</span>
-            <span class="c-day">7</span><span class="c-day">8</span><span class="c-day">9</span><span class="c-day">10</span><span class="c-day">11</span><span class="c-day">12</span><span class="c-day">13</span>
-            <span class="c-day">14</span><span class="c-day">15</span><span class="c-day">16</span><span class="c-day">17</span><span class="c-day">18</span><span class="c-day">19</span><span class="c-day">20</span>
-            <span class="c-day">21</span><span class="c-day">22</span><span class="c-day">23</span><span class="c-day">24</span><span class="c-day">25</span><span class="c-day">26</span><span class="c-day">27</span>
-            <span class="c-day">28</span><span class="c-day">29</span><span class="c-day today">30</span><span class="c-day muted">1</span><span class="c-day muted">2</span><span class="c-day muted">3</span><span class="c-day muted">4</span>
-          </div>
-        </div>
-
-        <!-- Card 3: Current Project -->
-        <div class="side-widget-box project-widget">
-          <div class="widget-top">
-            <h3><span class="w-icon">☑️</span> Current Project</h3>
-            <a href="https://github.com/Bantikevat/aura-os" target="_blank" class="widget-link">&rarr;</a>
-          </div>
-          <div class="current-proj-name">AURA – Personal AI Life OS</div>
-          <div class="proj-bar-track">
-            <div class="proj-bar-active" style="width: 68%;"></div>
-          </div>
-          <div class="proj-pct-text">68%</div>
-          <div class="proj-tech-chips">
-            <span class="chip">Next.js</span>
-            <span class="chip">Node.js</span>
-            <span class="chip">MongoDB</span>
-            <span class="chip">LangGraph</span>
-          </div>
-        </div>
-
-        <!-- Card 4: Goals Progress -->
-        <div class="side-widget-box goals-widget">
-          <div class="widget-top">
-            <h3><span class="w-icon">🎯</span> Goals</h3>
-            <a href="#" class="widget-link">View All &gt;</a>
-          </div>
-          <div class="goals-progress-list">
-            <div class="goal-entry">
-              <div class="goal-label"><span>Become AI Automation Engineer</span> <span>68%</span></div>
-              <div class="goal-track"><div class="goal-fill blue" style="width: 68%;"></div></div>
-            </div>
-            <div class="goal-entry">
-              <div class="goal-label"><span>Complete AURA V1</span> <span>45%</span></div>
-              <div class="goal-track"><div class="goal-fill cyan" style="width: 45%;"></div></div>
-            </div>
-            <div class="goal-entry">
-              <div class="goal-label"><span>GATE 2027 Preparation</span> <span>32%</span></div>
-              <div class="goal-track"><div class="goal-fill purple" style="width: 32%;"></div></div>
-            </div>
-            <div class="goal-entry">
-              <div class="goal-label"><span>Financial Stability</span> <span>55%</span></div>
-              <div class="goal-track"><div class="goal-fill green" style="width: 55%;"></div></div>
-            </div>
-            <div class="goal-entry">
-              <div class="goal-label"><span>Health & Fitness</span> <span>40%</span></div>
-              <div class="goal-track"><div class="goal-fill pink" style="width: 40%;"></div></div>
-            </div>
-          </div>
-        </div>
-
-      </aside>
 
     </div>
-  </div>
 
-  <script type="module" src="src/main.js"></script>
+  </main>
+
+  <script src="avatar3d.js"></script>
 </body>
 </html>
