@@ -215,7 +215,7 @@ class AuraEngine {
     }
 
     // 4. Memory Recall Intent ("What do you remember about...", "Search memory for...")
-    if (pLower.includes('remember') || pLower.includes('memory') || pLower.startsWith('recall')) {
+    if ((pLower.includes('remember') || pLower.startsWith('search memory') || pLower.startsWith('recall') || pLower.startsWith('memory:')) && !pLower.includes('system') && !pLower.includes('health') && !pLower.includes('inspect')) {
       const query = prompt.replace(/(what do you remember about|search memory for|recall|memory:?)/i, '').trim();
       const memories = query ? this.memory.search(query) : this.memory.getAll();
 
@@ -497,6 +497,33 @@ class AuraEngine {
       };
     }
 
+    // 7. System Inspector Tool Loop (System health, status, telemetry)
+    if (pLower.includes('system') || pLower.includes('health') || pLower.includes('ram') || pLower.includes('telemetry') || pLower.includes('inspect')) {
+      const tool = this.tools.get('system_inspector');
+      const toolOutput = await tool.execute();
+      const durationMs = Date.now() - startTime;
+      const verification = VerificationEngine.verifyResult(tool, toolOutput);
+
+      const auditEvent = this.trust.logExecution({
+        toolName: tool.name,
+        sensitivity: tool.sensitivity,
+        status: verification.verified ? 'success' : 'unverified',
+        evidence: verification.proof,
+        durationMs
+      });
+
+      return {
+        status: 'verified_complete',
+        intent: 'system_inspector',
+        tool: tool.name,
+        toolOutput,
+        verification,
+        auditEventId: auditEvent.id,
+        durationMs,
+        response: `System Status: ${toolOutput.os.platform}-${toolOutput.os.arch} is operational. Free RAM: ${toolOutput.memory.freeMB} MB / ${toolOutput.memory.totalMB} MB.`
+      };
+    }
+
     // 6.4. Real System Time ("Time bata do", "What is the time", "Time kya hua")
     if (pLower.includes('time') || pLower.includes('समय') || pLower.includes('घड़ी') || pLower.includes('kitne baje')) {
       const now = new Date();
@@ -532,32 +559,7 @@ class AuraEngine {
       };
     }
 
-    // 7. System Inspector Tool Loop (System health, status, telemetry)
-    if (pLower.includes('system') || pLower.includes('health') || pLower.includes('status') || pLower.includes('ram')) {
-      const tool = this.tools.get('system_inspector');
-      const toolOutput = await tool.execute();
-      const durationMs = Date.now() - startTime;
-      const verification = VerificationEngine.verifyResult(tool, toolOutput);
 
-      const auditEvent = this.trust.logExecution({
-        toolName: tool.name,
-        sensitivity: tool.sensitivity,
-        status: verification.verified ? 'success' : 'unverified',
-        evidence: verification.proof,
-        durationMs
-      });
-
-      return {
-        status: 'verified_complete',
-        intent: 'system_inspector',
-        tool: tool.name,
-        toolOutput,
-        verification,
-        auditEventId: auditEvent.id,
-        durationMs,
-        response: `System Status: ${toolOutput.os.platform}-${toolOutput.os.arch} is operational. Free RAM: ${toolOutput.memory.freeMB} MB / ${toolOutput.memory.totalMB} MB.`
-      };
-    }
 
     // 8. Filter out audio self-echoes or meaningless fragments
     if (

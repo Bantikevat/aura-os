@@ -15,103 +15,67 @@ document.addEventListener('DOMContentLoaded', () => {
   initSpeech();
   if (synth.onvoiceschanged !== undefined) synth.onvoiceschanged = initSpeech;
 
-  let isSpeaking = false;
-  let recognitionInstance = null;
+  // UI State Machine (Requirement #15)
+  // States: 'listening' | 'understanding' | 'executing' | 'verifying' | 'speaking' | 'ready'
+  function setUiState(state, info) {
+    const stListening = document.getElementById('stListening');
+    const stThinking = document.getElementById('stThinking');
+    const stSpeaking = document.getElementById('stSpeaking');
+    const stWorking = document.getElementById('stWorking');
+    const dialogue = document.getElementById('dialogueParagraph');
 
-  // Track recent AURA speech to permanently kill speaker-to-mic echo loops
-  const recentSpeechCache = [];
-  function recordSpokenText(text) {
-    if (!text) return;
-    const clean = text.toLowerCase().trim();
-    recentSpeechCache.push(clean);
-    if (recentSpeechCache.length > 8) recentSpeechCache.shift();
-  }
-
-  function isAuraEcho(text) {
-    if (!text) return true;
-    const clean = text.toLowerCase().trim();
-    if (clean.length < 3) return true;
-
-    // Check against recent spoken speech
-    for (const phrase of recentSpeechCache) {
-      if (clean.includes(phrase) || phrase.includes(clean)) return true;
-    }
-
-    // Check against known system phrases
-    const echoList = [
-      'मैंने सुना',
-      'बंटी भाई',
-      'अलार्म सेट',
-      'खोल रहा हूँ',
-      'खोल दिया गया है',
-      'memories evaluated',
-      'processed your query',
-      'मेमोरीज',
-      'एवालुएटेड'
-    ];
-    for (const item of echoList) {
-      if (clean.includes(item)) return true;
-    }
-    return false;
-  }
-
-  function speakAura(text) {
-    if (!text) return;
-    recordSpokenText(text);
-    synth.cancel();
-
-    // Mute microphone while AURA is speaking to prevent speaker-to-mic echo feedback
-    isSpeaking = true;
-    if (recognitionInstance) {
-      try { recognitionInstance.abort(); } catch {}
-    }
-
-    const stopBtn = document.getElementById('auraFloatingStopBtn');
-    if (stopBtn) stopBtn.style.display = 'flex';
-
-    const utter = new SpeechSynthesisUtterance(text);
-    if (hindiVoice) utter.voice = hindiVoice;
-    utter.rate = 1.0;
-    utter.pitch = 1.0;
-
-    // Visual wave reaction
-    const wave = document.getElementById('soundWaveStrip');
-    if (wave) wave.style.opacity = '1';
-
-    utter.onend = () => {
-      if (wave) wave.style.opacity = '0.7';
-      const stopBtn = document.getElementById('auraFloatingStopBtn');
-      if (stopBtn) stopBtn.style.display = 'none';
-      // 500ms cool-down buffer after speaker stops before re-arming the microphone
-      setTimeout(() => {
-        isSpeaking = false;
-        if (isAlwaysOn && recognitionInstance) {
-          try { recognitionInstance.start(); } catch {}
-        }
-      }, 500);
+    const resetDots = () => {
+      if (stListening) stListening.style.color = '';
+      if (stThinking) stThinking.style.color = '';
+      if (stSpeaking) stSpeaking.style.color = '';
+      if (stWorking) stWorking.style.color = '';
     };
 
-    utter.onerror = () => {
-      setTimeout(() => {
-        isSpeaking = false;
-        if (isAlwaysOn && recognitionInstance) {
-          try { recognitionInstance.start(); } catch {}
-        }
-      }, 300);
-    };
+    resetDots();
 
-    synth.speak(utter);
+    switch (state) {
+      case 'listening':
+        if (stListening) stListening.style.color = '#38bdf8';
+        if (dialogue && !info) dialogue.textContent = '🎙️ Listening... बोलिए, AURA सुन रहा है';
+        break;
+      case 'understanding':
+        if (stThinking) stThinking.style.color = '#f59e0b';
+        if (dialogue) dialogue.textContent = `🧠 Understanding: "${info || ''}"`;
+        break;
+      case 'executing':
+        if (stWorking) stWorking.style.color = '#10b981';
+        if (dialogue) dialogue.textContent = `⚙ Executing: ${info || 'action'}...`;
+        break;
+      case 'verifying':
+        if (stWorking) stWorking.style.color = '#10b981';
+        if (dialogue) dialogue.textContent = `🔍 Verifying ${info || 'action'}...`;
+        break;
+      case 'speaking':
+        if (stSpeaking) stSpeaking.style.color = '#ec4899';
+        if (dialogue) dialogue.textContent = info || 'Speaking...';
+        break;
+      case 'completed':
+      case 'ready':
+      default:
+        if (stListening) stListening.style.color = '#10b981';
+        if (dialogue && info) dialogue.textContent = `✓ ${info}`;
+        break;
+    }
   }
 
-  // 1. Live Date & Time
-  
+  function speakAura(text, onComplete) {
+    setUiState('speaking', text);
+    auraVoiceEngine.speak(text, () => {
+      setUiState('ready');
+      if (onComplete) onComplete();
+    });
+  }
+
   // Global Stop Button Handler
   const auraFloatingStopBtn = document.getElementById('auraFloatingStopBtn');
   function stopSpeakingNow() {
-    synth.cancel();
-    isSpeaking = false;
-    if (auraFloatingStopBtn) auraFloatingStopBtn.style.display = 'none';
-    if (dialogueParagraph) dialogueParagraph.textContent = '⏹️ AURA Stopped.';
+    auraVoiceEngine.stopSpeaking();
+    setUiState('ready', 'AURA Stopped.');
     console.log('[AURA SPEECH STOPPED BY USER]');
   }
   if (auraFloatingStopBtn) {
@@ -249,116 +213,67 @@ document.addEventListener('DOMContentLoaded', () => {
     const text = (overrideText || (voiceCommandInput ? voiceCommandInput.value : '')).trim();
     if (!text) return;
 
-    if (dialogueParagraph) dialogueParagraph.textContent = text;
-
-    // Quick local overrides
-
     const lower = text.toLowerCase();
 
-    // Instant echo check
-    if (isAuraEcho(text)) return;
+    // 0. Stop Command Check (English + Hindi)
+    if (
+      lower === 'stop' || 
+      lower.includes('ruko') || 
+      lower.includes('band karo') || 
+      lower.includes('chup') || 
+      lower.includes('shant') ||
+      lower.includes('स्टॉप') ||
+      lower.includes('रुको') ||
+      lower.includes('रुकिए') ||
+      lower.includes('चुप')
+    ) {
+      stopSpeakingNow();
+      return;
+    }
 
-  // 0. Instant Stop Voice Command (English + Devanagari Hindi)
-  if (
-    lower === 'stop' || 
-    lower.includes('ruko') || 
-    lower.includes('band karo') || 
-    lower.includes('chup') || 
-    lower.includes('shant') ||
-    lower.includes('स्टॉप') ||
-    lower.includes('रुको') ||
-    lower.includes('रुकिए') ||
-    lower.includes('चुप') ||
-    lower.includes('बंद')
-  ) {
-    stopSpeakingNow();
-    return;
-  }
-
-  // 1. Instant App Launches (Synchronous + Hindi Devanagari Support!)
-  if (
-    lower.includes('youtube') || 
-    lower.includes('युटुब') || 
-    lower.includes('यूट्यूब') || 
-    lower.includes('यू ट्यूब') ||
-    lower.includes('यूटुब')
-  ) {
-    launchApp('YouTube', 'https://www.youtube.com');
-    speakAura("यूट्यूब खोल रहा हूँ।");
-    if (dialogueParagraph) dialogueParagraph.textContent = "🚀 Opening YouTube...";
-    return;
-  }
-
-  if (
-    lower.includes('whatsapp') || 
-    lower.includes('व्हाट्सएप') || 
-    lower.includes('व्हाट्सअप') || 
-    lower.includes('व्हाट्सऐप') ||
-    lower.includes('वाटसप')
-  ) {
-    launchApp('WhatsApp', 'https://web.whatsapp.com');
-    speakAura("व्हाट्सएप खोल रहा हूँ।");
-    if (dialogueParagraph) dialogueParagraph.textContent = "🚀 Opening WhatsApp...";
-    return;
-  }
-
-  if (lower.includes('github') || lower.includes('repo') || lower.includes('गिटहब')) {
-    launchApp('GitHub', 'https://github.com/Bantikevat/aura-os');
-    speakAura("गिटहब खोल रहा हूँ।");
-    if (dialogueParagraph) dialogueParagraph.textContent = "🚀 Opening GitHub...";
-    return;
-  }
-
-  if (lower.includes('google') || lower.includes('गूगल') || lower.includes('गुगल')) {
-    launchApp('Google', 'https://www.google.com');
-    speakAura("गूगल खोल रहा हूँ।");
-    if (dialogueParagraph) dialogueParagraph.textContent = "🚀 Opening Google...";
-    return;
-  }
-
-  if (
-    lower.includes('spotify') || 
-    lower.includes('music') || 
-    lower.includes('gana') || 
-    lower.includes('म्यूजिक') || 
-    lower.includes('गाना') || 
-    lower.includes('गाने')
-  ) {
-    launchApp('Spotify', 'https://open.spotify.com');
-    speakAura("म्यूजिक खोल रहा हूँ।");
-    if (dialogueParagraph) dialogueParagraph.textContent = "🚀 Opening Spotify...";
-    return;
-  }
-
-    if (lower.includes('camera') || lower.includes('webcam')) {
+    // Camera / Screen local toggles
+    if (lower.includes('camera') || lower.includes('webcam') || lower.includes('कैमरा')) {
       toggleWebcam();
       return;
     }
-    if (lower.includes('share screen') || lower.includes('screen share')) {
+    if (lower.includes('share screen') || lower.includes('screen share') || lower.includes('स्क्रीन')) {
       toggleScreen();
       return;
     }
 
+    // Set UI State: Understanding
+    setUiState('understanding', text);
+
+    // Generate unique actionId for this execution (Requirement #4)
+    const actionId = 'cmd_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8);
+
     try {
+      // Set UI State: Executing
+      setUiState('executing', text);
+
       const res = await fetch('/api/execute', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: text })
+        body: JSON.stringify({ prompt: text, actionId })
       });
       const data = await res.json();
 
-      if (dialogueParagraph && data.response) {
-        dialogueParagraph.textContent = data.response;
+      // Set UI State: Verifying
+      setUiState('verifying', data.appName || text);
+
+      // 1. Open URL action (YouTube, WhatsApp Web, GitHub, Google, Spotify)
+      if (data.action === 'open_url' && data.url) {
+        launchApp(data.appName || 'Web', data.url);
       }
 
-      // 0. Launch Native Desktop App (VS Code, Antigravity, Notepad, Calc, etc.)
-      if (data.action === 'launch_desktop_app') {
+      // 2. Desktop Application Launched
+      if (data.action === 'launch_desktop') {
         const toast = document.getElementById('auraAppLaunchToast');
         if (toast) {
           toast.innerHTML = `
             <div class="toast-content">
               <span class="toast-icon">⚡</span>
-              <span class="toast-msg">Opening <b>${data.appName || 'Desktop App'}</b> on PC...</span>
+              <span class="toast-msg"><b>${data.appName || 'App'}</b> launched on your PC</span>
             </div>
           `;
           toast.style.display = 'flex';
@@ -366,12 +281,37 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      // 1. Open URL action (YouTube, GitHub, Google)
-      if (data.action === 'open_url' && data.url) {
-        window.open(data.url, '_blank');
+      // 3. Desktop Application Closed
+      if (data.action === 'close_app') {
+        const toast = document.getElementById('auraAppLaunchToast');
+        if (toast) {
+          toast.innerHTML = `
+            <div class="toast-content">
+              <span class="toast-icon">⏹</span>
+              <span class="toast-msg"><b>${data.appName || 'App'}</b> closed</span>
+            </div>
+          `;
+          toast.style.display = 'flex';
+          setTimeout(() => { toast.style.display = 'none'; }, 3000);
+        }
       }
 
-      // 2. Set Alarm action
+      // 4. Desktop Application Focused
+      if (data.action === 'focus_app') {
+        const toast = document.getElementById('auraAppLaunchToast');
+        if (toast) {
+          toast.innerHTML = `
+            <div class="toast-content">
+              <span class="toast-icon">🔍</span>
+              <span class="toast-msg"><b>${data.appName || 'App'}</b> brought to foreground</span>
+            </div>
+          `;
+          toast.style.display = 'flex';
+          setTimeout(() => { toast.style.display = 'none'; }, 3000);
+        }
+      }
+
+      // 5. Alarm action
       if (data.action === 'set_alarm' && data.minutes) {
         const ms = data.minutes * 60 * 1000;
         setTimeout(() => {
@@ -381,18 +321,62 @@ document.addEventListener('DOMContentLoaded', () => {
         }, ms);
       }
 
-      // 3. Navigation
+      // 6. Navigation
       if (data.navigateTo) {
         openPage(data.navigateTo, data.navigateTo.charAt(0).toUpperCase() + data.navigateTo.slice(1));
       }
 
-      // 4. Voice response
+      // 7. NIST Confirmation Gate
+      if (data.status === 'waiting_for_confirmation') {
+        const modal = document.getElementById('nistConfirmModal');
+        const warnText = document.getElementById('nistActionDescription');
+        if (modal && warnText) {
+          warnText.textContent = data.warning;
+          modal.style.display = 'flex';
+          
+          const confirmBtn = document.getElementById('btnConfirmNistAction');
+          const cancelBtn = document.getElementById('btnCancelNistAction');
+          
+          const handleConfirm = async () => {
+            modal.style.display = 'none';
+            cleanupModal();
+            const cRes = await fetch('/api/execute', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ prompt: text, userApproved: true, confirmationToken: data.confirmationToken })
+            });
+            const cData = await cRes.json();
+            speakAura(cData.response);
+          };
+          
+          const handleCancel = () => {
+            modal.style.display = 'none';
+            cleanupModal();
+            speakAura('कार्रवाई रद्द कर दी गई है।');
+          };
+
+          function cleanupModal() {
+            confirmBtn.removeEventListener('click', handleConfirm);
+            cancelBtn.removeEventListener('click', handleCancel);
+          }
+
+          confirmBtn.addEventListener('click', handleConfirm);
+          cancelBtn.addEventListener('click', handleCancel);
+        }
+      }
+
+      // 8. Speak Final Response & STOP (Requirement #14)
       if (data.response && data.status !== 'ignored') {
-        speakAura(data.response);
+        speakAura(data.response, () => {
+          setUiState('completed', data.response);
+        });
+      } else {
+        setUiState('ready');
       }
     } catch (err) {
       console.error('[HANDLE COMMAND ERROR]', err);
-      speakAura("जी बंटी भाई, कनेक्शन में समस्या आई।");
+      speakAura("जी बंटी भाई, कमांड प्रोसेस करने में समस्या आई।");
+      setUiState('ready');
     }
 
     if (voiceCommandInput) voiceCommandInput.value = '';
@@ -402,88 +386,6 @@ document.addEventListener('DOMContentLoaded', () => {
   voiceCommandInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') handleCommand();
   });
-
-  // Continuous Always-On Voice Recognition Engine
-  let isAlwaysOn = true;
-
-  if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognition = new SpeechRec();
-    recognitionInstance = recognition;
-    recognition.lang = 'hi-IN';
-    recognition.continuous = true; // Always-on continuous listening
-    recognition.interimResults = false;
-
-    recognition.onstart = () => {
-      if (glowMicTrigger) {
-        glowMicTrigger.style.background = '#10b981';
-        glowMicTrigger.style.boxShadow = '0 0 20px #10b981';
-        glowMicTrigger.title = '🎙️ Always-On Mode Active (Listening)';
-      }
-      const stListening = document.getElementById('stListening');
-      if (stListening) stListening.style.color = '#38bdf8';
-    };
-
-    recognition.onresult = (e) => {
-      if (isSpeaking) {
-        console.log('[MIC ECHO DROPPED - AURA SPEAKING]');
-        return;
-      }
-      const lastIdx = e.results.length - 1;
-      const transcript = e.results[lastIdx][0].transcript.trim();
-      if (!transcript || isAuraEcho(transcript)) {
-        console.log('[DROPPED ECHO TRANSCRIPT]:', transcript);
-        return;
-      }
-
-      console.log('[VOICE RECOGNIZED]', transcript);
-      if (voiceCommandInput) voiceCommandInput.value = transcript;
-      handleCommand(transcript);
-    };
-
-    recognition.onend = () => {
-      // Auto-restart if Always-On mode is active
-      if (isAlwaysOn) {
-        try {
-          recognition.start();
-        } catch {}
-      } else {
-        if (glowMicTrigger) {
-          glowMicTrigger.style.background = '';
-          glowMicTrigger.style.boxShadow = '';
-        }
-      }
-    };
-
-    recognition.onerror = (e) => {
-      console.warn('[VOICE ENGINE EVENT]', e.error);
-      if (isAlwaysOn && e.error !== 'not-allowed') {
-        setTimeout(() => {
-          try { recognition.start(); } catch {}
-        }, 1000);
-      }
-    };
-
-    if (glowMicTrigger) {
-      glowMicTrigger.addEventListener('click', () => {
-        isAlwaysOn = !isAlwaysOn;
-        if (isAlwaysOn) {
-          try { recognition.start(); } catch {}
-          speakAura("Always-On मोड चालू हो गया है बंटी भाई। मैं लगातार सुन रहा हूँ।");
-        } else {
-          recognition.stop();
-          speakAura("Always-On मोड पॉज़ कर दिया गया है।");
-        }
-      });
-    }
-
-    // Auto-start listening on first user interaction
-    document.addEventListener('click', () => {
-      if (isAlwaysOn && recognition) {
-        try { recognition.start(); } catch {}
-      }
-    }, { once: true });
-  }
 
   // 5. 10 Working Action Cards
   const cardSpeeches = {

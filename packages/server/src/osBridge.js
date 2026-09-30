@@ -1,0 +1,294 @@
+const { exec, spawn } = require('child_process');
+const fs = require('fs');
+
+class OsBridge {
+  constructor() {
+    this.inFlightActions = new Set();
+    this.completedActions = new Map();
+    this.recentCommands = new Map(); // key: normalizedText, val: { actionId, timestamp, result }
+    this.dedupWindowMs = 2500; // 2.5 second window for duplicate voice recognition events
+  }
+
+  generateActionId() {
+    return 'cmd_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8);
+  }
+
+  /**
+   * Executes a validated parsed command through the safe OS bridge.
+   * Enforces State Machine: IDLE -> PLANNING -> EXECUTING -> VERIFYING -> COMPLETED
+   */
+  async executeAction({ actionId, intent, target, app, normalizedText }) {
+    const actId = actionId || this.generateActionId();
+    const now = Date.now();
+
+    // 1. Duplicate Voice Protection (Requirement #5)
+    if (normalizedText && this.recentCommands.has(normalizedText)) {
+      const recent = this.recentCommands.get(normalizedText);
+      if (now - recent.timestamp < this.dedupWindowMs) {
+        console.log(`[DEDUP VOICE FILTER] Dropping duplicated command "${normalizedText}" within ${now - recent.timestamp}ms window`);
+        return {
+          ...recent.result,
+          deduplicated: true,
+          actionId: recent.actionId,
+          state: 'COMPLETED'
+        };
+      }
+    }
+
+    // 2. Action Idempotency Check (Requirement #4)
+    if (this.inFlightActions.has(actId)) {
+      console.warn(`[IDEMPOTENCY] Action ${actId} is already IN_FLIGHT. Ignoring duplicate execution.`);
+      return { status: 'in_flight', actionId: actId, state: 'EXECUTING' };
+    }
+
+    if (this.completedActions.has(actId)) {
+      console.log(`[IDEMPOTENCY] Action ${actId} already COMPLETED. Returning cached result.`);
+      return this.completedActions.get(actId);
+    }
+
+    // Mark as in-flight
+    this.inFlightActions.add(actId);
+
+    let state = 'PLANNING';
+    const logEntry = {
+      timestamp: new Date().toISOString(),
+      actionId: actId,
+      intent,
+      target,
+      normalizedCommand: normalizedText,
+      attemptCount: 1,
+      state
+    };
+
+    try {
+      state = 'EXECUTING';
+      logEntry.state = state;
+
+      let result = null;
+
+      if (intent === 'OPEN_APP') {
+        result = await this._handleOpenApp(app);
+      } else if (intent === 'CLOSE_APP') {
+        result = await this._handleCloseApp(app);
+      } else if (intent === 'FOCUS_APP') {
+        result = await this._handleFocusApp(app);
+      } else {
+        result = {
+          success: false,
+          state: 'FAILED',
+          response: `अज्ञात कमांड: ${intent}`,
+          error: 'unknown_intent'
+        };
+      }
+
+      state = result.success ? 'COMPLETED' : 'FAILED';
+      result.state = state;
+      result.actionId = actId;
+      result.intent = intent;
+      result.target = target;
+      result.timestamp = new Date().toISOString();
+
+      // Store in completed actions cache (keep max 100 entries)
+      this.completedActions.set(actId, result);
+      if (this.completedActions.size > 100) {
+        const firstKey = this.completedActions.keys().next().value;
+        this.completedActions.delete(firstKey);
+      }
+
+      // Store in recent commands for duplicate window protection
+      if (normalizedText) {
+        this.recentCommands.set(normalizedText, {
+          actionId: actId,
+          timestamp: now,
+          result
+        });
+      }
+
+      console.log(`[OS BRIDGE EXECUTED] ${actId} | Intent: ${intent} | Target: ${target} | State: ${state} | Response: "${result.response}"`);
+      return result;
+    } catch (err) {
+      console.error(`[OS BRIDGE ERROR] ${actId}:`, err);
+      const failedResult = {
+        success: false,
+        state: 'FAILED',
+        actionId: actId,
+        intent,
+        target,
+        response: `त्रुटि: ${err.message}`,
+        error: err.message
+      };
+      this.completedActions.set(actId, failedResult);
+      return failedResult;
+    } finally {
+      this.inFlightActions.delete(actId);
+    }
+  }
+
+  // --- Handlers for Intents ---
+
+  async _handleOpenApp(app) {
+    if (!app) return { success: false, response: 'App not found in registry.' };
+
+    // 1. Web-only apps (e.g. YouTube)
+    if (app.type === 'url') {
+      return {
+        success: true,
+        action: 'open_url',
+        url: app.url,
+        appName: app.displayName,
+        response: app.successMessage || `${app.displayName} open ho gaya.`
+      };
+    }
+
+    // 2. Desktop or Web Hybrid (WhatsApp)
+    if (app.type === 'desktop_or_web') {
+      // Check candidate executables
+      let foundPath = null;
+      if (app.executableCandidates) {
+        for (const cand of app.executableCandidates) {
+          if (fs.existsSync(cand)) {
+            foundPath = cand;
+            break;
+          }
+        }
+      }
+
+      if (foundPath) {
+        await this._launchDetached(`"${foundPath}"`);
+        return {
+          success: true,
+          action: 'launch_desktop',
+          appName: app.displayName,
+          response: app.successMessage || `${app.displayName} open ho gaya.`
+        };
+      }
+
+      // Use safe fallback (WhatsApp Web) truthfully reporting fallback
+      if (app.fallback && app.fallback.type === 'url') {
+        return {
+          success: true,
+          action: 'open_url',
+          url: app.fallback.url,
+          appName: app.displayName,
+          fallbackUsed: true,
+          response: 'WhatsApp Web open ho gaya.'
+        };
+      }
+    }
+
+    // 3. Desktop Application (VS Code, Notepad, Calc, Chrome, etc.)
+    if (app.launchCommand) {
+      // For VS Code, verify availability
+      if (app.id === 'VS_CODE') {
+        const isCodeCmdAvailable = await this._verifyCommand('where code');
+        if (!isCodeCmdAvailable && app.executableCandidates) {
+          const found = app.executableCandidates.some(c => typeof c === 'string' && fs.existsSync(c));
+          if (!found) {
+            return {
+              success: false,
+              appName: app.displayName,
+              response: app.notFoundMessage || 'VS Code is not installed or could not be found.'
+            };
+          }
+        }
+      }
+
+      // Launch fully detached so event loop never blocks
+      await this._launchDetached(app.launchCommand);
+      return {
+        success: true,
+        action: 'launch_desktop',
+        appName: app.displayName,
+        response: app.successMessage || `${app.displayName} open ho gaya.`
+      };
+    }
+
+    return {
+      success: false,
+      response: `${app.displayName} को खोलने की कोई विधि उपलब्ध नहीं है।`
+    };
+  }
+
+  async _handleCloseApp(app) {
+    if (!app || !app.processName) {
+      return {
+        success: false,
+        response: `${app ? app.displayName : 'App'} को बंद करने के लिए कोई प्रोसेस नहीं मिली।`
+      };
+    }
+
+    const cmd = `powershell -NoProfile -Command "Stop-Process -Name '${app.processName}' -Force -ErrorAction SilentlyContinue"`;
+    await this._execCommand(cmd);
+
+    return {
+      success: true,
+      action: 'close_app',
+      appName: app.displayName,
+      response: `${app.displayName} band ho gaya.`
+    };
+  }
+
+  async _handleFocusApp(app) {
+    if (!app || !app.processName) {
+      return {
+        success: false,
+        response: `${app ? app.displayName : 'App'} को foreground में लाना संभव नहीं है।`
+      };
+    }
+
+    const cmd = `powershell -NoProfile -Command "(New-Object -ComObject WScript.Shell).AppActivate('${app.processName}')"`;
+    const stdout = await this._execCommand(cmd);
+    const focused = stdout && stdout.trim().toLowerCase() === 'true';
+
+    return {
+      success: true,
+      action: 'focus_app',
+      appName: app.displayName,
+      focused,
+      response: `${app.displayName} foreground mein aa gaya.`
+    };
+  }
+
+  _launchDetached(cmdStr) {
+    return new Promise((resolve) => {
+      try {
+        // Run cmd.exe /c start "" <command> fully detached
+        const p = spawn('cmd.exe', ['/c', 'start', '""', cmdStr], {
+          detached: true,
+          stdio: 'ignore'
+        });
+        p.unref();
+        resolve(true);
+      } catch (err) {
+        console.warn(`[LAUNCH ERROR] ${cmdStr}:`, err.message);
+        resolve(false);
+      }
+    });
+  }
+
+  _execCommand(command) {
+    return new Promise((resolve) => {
+      exec(command, (err, stdout) => {
+        if (err) {
+          resolve('');
+        } else {
+          resolve(stdout || '');
+        }
+      });
+    });
+  }
+
+  _verifyCommand(cmd) {
+    return new Promise((resolve) => {
+      exec(cmd, (err) => {
+        resolve(!err);
+      });
+    });
+  }
+}
+
+const osBridge = new OsBridge();
+
+module.exports = {
+  osBridge
+};

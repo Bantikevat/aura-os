@@ -3,6 +3,8 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const { AuraEngine } = require('../../core/src/engine');
+const { osBridge } = require('./osBridge');
+const { normalizeAndParseIntent } = require('../../core/src/intents/commandNormalizer');
 
 const aura = new AuraEngine();
 const PORT = process.env.PORT || 3000;
@@ -140,20 +142,42 @@ const server = http.createServer(async (req, res) => {
 
   if (url.pathname === '/api/execute' && req.method === 'POST') {
     const body = await parseBody(req);
-    const result = await aura.executeIntent({
-      userPrompt: body.prompt || body.query || '',
-      userApproved: !!body.userApproved,
-      confirmationToken: body.confirmationToken || null
-    });
+    const userPrompt = (body.prompt || body.query || '').trim();
+    const actionId = body.actionId || osBridge.generateActionId();
 
-    // Native Desktop Application Execution on Banti's Windows PC
-    if (result.intent === 'launch_desktop_app' && result.command) {
-      console.log('[EXECUTING DESKTOP COMMAND]:', result.command);
-      exec(result.command, (err) => {
-        if (err) console.error('[DESKTOP EXEC ERROR]:', err.message);
-        else console.log('[SUCCESS LAUNCHED APP]:', result.appName);
+    // 1. Structured Intent Normalization & Safe OS Bridge Execution
+    const parsed = normalizeAndParseIntent(userPrompt);
+    if (parsed.isCommand) {
+      const osResult = await osBridge.executeAction({
+        actionId,
+        intent: parsed.intent,
+        target: parsed.target,
+        app: parsed.app,
+        normalizedText: parsed.normalizedText
+      });
+
+      return sendJSON(res, 200, {
+        status: osResult.success ? 'verified_complete' : 'failed',
+        actionId,
+        intent: osResult.intent,
+        target: osResult.target,
+        action: osResult.action,
+        url: osResult.url,
+        appName: osResult.appName,
+        state: osResult.state,
+        deduplicated: !!osResult.deduplicated,
+        response: osResult.response,
+        timestamp: osResult.timestamp
       });
     }
+
+    // 2. Standard Engine Execution (Goals, Memory, NIST Confirmation Gates, Greetings)
+    const result = await aura.executeIntent({
+      userPrompt,
+      userApproved: !!body.userApproved,
+      confirmationToken: body.confirmationToken || null,
+      actionId
+    });
 
     return sendJSON(res, 200, result);
   }
