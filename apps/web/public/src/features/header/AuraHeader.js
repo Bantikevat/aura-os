@@ -192,7 +192,7 @@ export function mountAuraHeader({ onNavigate, speakFn, onToggleCamera, onToggleS
         setState('Approval Required', true);
         pendingApprovalQuery = { prompt: promptText, token: data.confirmationToken };
         if (nistMsg) nistMsg.textContent = data.warning || 'Sensitive operation detected. Approve to continue.';
-        if (nistModal) nistModal.style.display = 'flex';
+        if (nistModal) { nistModal.classList.add('active'); nistModal.style.display = 'flex'; }
         return;
       }
 
@@ -227,7 +227,7 @@ export function mountAuraHeader({ onNavigate, speakFn, onToggleCamera, onToggleS
   // NIST Approval Modal handlers
   if (btnCancelNist && nistModal) {
     btnCancelNist.addEventListener('click', () => {
-      nistModal.style.display = 'none';
+      nistModal.classList.remove('active'); nistModal.classList.remove('active'); nistModal.style.display = 'none';
       pendingApprovalQuery = null;
       setState('Cancelled', true);
       setTimeout(() => setState('', false), 2000);

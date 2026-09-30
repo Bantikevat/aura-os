@@ -607,10 +607,14 @@
   background: rgba(0, 0, 0, 0.75) !important;
   backdrop-filter: blur(12px) !important;
   -webkit-backdrop-filter: blur(12px) !important;
-  display: flex !important;
+  display: none !important;
   align-items: center !important;
   justify-content: center !important;
   z-index: 99999 !important;
+}
+
+.nist-modal-backdrop.active {
+  display: flex !important;
 }
 
 .nist-modal-card {
