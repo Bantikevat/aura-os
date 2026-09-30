@@ -1,6 +1,8 @@
+import { initHeaderFeatures } from './src/features/header/header.js';
 // AURA Life OS V3 — Real Webcam, Screen Mirror & Hindi Voice Engine
 document.addEventListener('DOMContentLoaded', () => {
   console.log('[AURA V3] Initializing All Real Working Features...');
+  initHeaderFeatures(speakAura);
 
   const synth = window.speechSynthesis;
   let hindiVoice = null;

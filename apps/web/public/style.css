@@ -392,3 +392,92 @@ body {
   background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
   border-radius: 6px; padding: 8px 10px; font-size: 0.78rem; color: #fff;
 }
+
+
+/* HEADER INTERACTIVE DROPDOWNS & MODALS */
+.search-results-dropdown {
+  position: absolute; top: calc(100% + 8px); left: 0; right: 0;
+  background: rgba(11, 17, 34, 0.96); backdrop-filter: blur(20px);
+  border: 1px solid var(--border-cyan); border-radius: var(--radius-md);
+  padding: 8px; display: flex; flex-direction: column; gap: 4px;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.8); z-index: 1000;
+}
+.search-drop-item {
+  display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+  border-radius: 6px; cursor: pointer; transition: background 0.15s;
+}
+.search-drop-item:hover { background: rgba(56, 189, 248, 0.15); }
+.s-icon { font-size: 1.1rem; }
+.s-info { display: flex; flex-direction: column; }
+.s-info strong { font-size: 0.78rem; color: #fff; }
+.s-info span { font-size: 0.65rem; color: var(--text-dim); }
+
+.vision-dropdown-menu, .focus-menu-box {
+  position: absolute; top: calc(100% + 10px); right: 0; min-width: 220px;
+  background: rgba(11, 17, 34, 0.96); backdrop-filter: blur(20px);
+  border: 1px solid var(--border-cyan); border-radius: var(--radius-md);
+  padding: 6px; display: flex; flex-direction: column; gap: 3px;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.8); z-index: 1000;
+}
+.v-menu-item, .f-item {
+  display: flex; align-items: center; gap: 8px; padding: 8px 12px;
+  border-radius: 6px; font-size: 0.76rem; color: #cbd5e1; cursor: pointer;
+  transition: all 0.15s;
+}
+.v-menu-item:hover, .f-item:hover {
+  background: rgba(56, 189, 248, 0.15); color: #fff;
+}
+
+.notif-drawer-box {
+  position: absolute; top: calc(100% + 10px); right: 0; width: 300px;
+  background: rgba(11, 17, 34, 0.96); backdrop-filter: blur(20px);
+  border: 1px solid var(--border-cyan); border-radius: var(--radius-md);
+  padding: 12px; display: flex; flex-direction: column; gap: 8px;
+  box-shadow: 0 20px 45px rgba(0,0,0,0.8); z-index: 1000;
+}
+.notif-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.notif-header h4 { font-size: 0.82rem; color: #fff; }
+.clear-all-link { background: none; border: none; font-size: 0.68rem; color: var(--accent-cyan); cursor: pointer; }
+.notif-list { display: flex; flex-direction: column; gap: 6px; max-height: 240px; overflow-y: auto; }
+.notif-item {
+  display: flex; gap: 8px; padding: 6px; border-radius: 6px; background: rgba(255,255,255,0.02);
+}
+.n-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent-cyan); margin-top: 4px; }
+.n-text strong { font-size: 0.72rem; color: #fff; display: block; }
+.n-text p { font-size: 0.65rem; color: var(--text-muted); line-height: 1.2; }
+.n-time { font-size: 0.58rem; color: var(--text-dim); }
+
+.profile-popover-box {
+  position: absolute; top: calc(100% + 10px); right: 0; width: 240px;
+  background: rgba(11, 17, 34, 0.96); backdrop-filter: blur(20px);
+  border: 1px solid var(--border-cyan); border-radius: var(--radius-md);
+  padding: 14px; display: flex; flex-direction: column; gap: 10px;
+  box-shadow: 0 20px 45px rgba(0,0,0,0.8); z-index: 1000;
+}
+.pop-header { display: flex; align-items: center; gap: 10px; }
+.pop-avatar { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; border: 1.5px solid var(--accent-cyan); }
+.pop-header h4 { font-size: 0.85rem; color: #fff; }
+.badge-role { font-size: 0.62rem; color: var(--accent-cyan); }
+.pop-status-select { display: flex; align-items: center; justify-content: space-between; font-size: 0.72rem; }
+.pop-status-select select {
+  background: rgba(0,0,0,0.5); border: 1px solid var(--border-cyan); color: #fff;
+  border-radius: 4px; padding: 3px 6px; font-size: 0.68rem; outline: none;
+}
+.pop-stats {
+  display: flex; justify-content: space-around; background: rgba(0,0,0,0.3);
+  padding: 8px; border-radius: 6px; text-align: center;
+}
+.pop-stats strong { display: block; font-size: 0.88rem; color: var(--accent-cyan); }
+.pop-stats span { font-size: 0.6rem; color: var(--text-dim); }
+
+/* LIGHT CONTRAST THEME */
+body.light-theme {
+  --bg-dark: #0f172a;
+  --bg-panel: rgba(30, 41, 59, 0.9);
+  --text-pure: #ffffff;
+  --text-muted: #e2e8f0;
+  --border-cyan: rgba(56, 189, 248, 0.5);
+}
