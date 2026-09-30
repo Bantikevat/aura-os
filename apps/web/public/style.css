@@ -215,6 +215,32 @@ body {
 .c-yellow { color: #fbbf24; } .c-pink { color: #f472b6; } .c-cyan { color: #38bdf8; }
 
 /* DIALOGUE BUBBLE ON RIGHT */
+
+/* OVERLAYS ON RIGHT OF PHOTO */
+.photo-right-overlays {
+  position: absolute; top: 1.25rem; right: 1.5rem;
+  display: flex; flex-direction: column; gap: 10px; z-index: 10;
+  max-width: 250px;
+}
+
+.photo-right-overlays .hero-dialogue-bubble {
+  position: static;
+  max-width: 100%;
+  padding: 10px 14px;
+}
+
+.photo-right-overlays .hero-dialogue-bubble h3 {
+  font-size: 1.05rem;
+}
+
+.photo-right-overlays .hero-dialogue-bubble p {
+  font-size: 0.76rem;
+}
+
+.photo-right-overlays .screen-view-widget {
+  max-width: 100%;
+}
+
 .hero-dialogue-bubble {
   position: absolute; top: 3.5rem; right: 2rem;
   background: rgba(14, 22, 42, 0.92); backdrop-filter: var(--blur);
