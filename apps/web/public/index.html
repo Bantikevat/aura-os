@@ -3,80 +3,356 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AURA — Banti's 3D AI Avatar</title>
+  <title>AURA — Personal AI Life OS</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
-  <!-- Three.js 3D Library -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
-  <!-- Clean Aurora Glow Background -->
-  <div class="ambient-glow"></div>
+  <div class="app-root">
 
-  <!-- Header -->
-  <header class="app-header">
-    <div class="brand">
-      <div class="cyan-orb"></div>
-      <div class="brand-titles">
-        <h1>AURA 3D</h1>
-        <span>बंटी का पर्सनल 3D लाइफ अवतार</span>
-      </div>
-    </div>
-
-    <!-- Status & Face Uploader -->
-    <div class="header-right">
-      <div class="status-pill">
-        <span class="pulse-dot"></span> <span id="statusLabel">3D AVATAR ONLINE</span>
-      </div>
-      <button id="uploadFaceBtn" class="action-pill-btn">📷 अपनी फ़ोटो बदलें</button>
-      <input type="file" id="faceInput" accept="image/*" style="display:none;">
-    </div>
-  </header>
-
-  <!-- Main 3D Viewport -->
-  <main class="stage-viewport">
-    
-    <!-- 3D WebGL Canvas Container -->
-    <div id="threeContainer" class="webgl-canvas-box">
-      <!-- Floating Instructions Hint -->
-      <div class="viewport-tip">
-        <span>🖱️ माउस से 3D अवतार को 360° घुमाएं और ज़ूम करें</span>
-      </div>
-    </div>
-
-    <!-- Floating Subtitle Dialogue (Hindi) -->
-    <div class="speech-dialogue-bubble" id="speechBubble">
-      <div class="speaker-label">AURA (बंटी का अवतार):</div>
-      <p id="subtitlesText">"नमस्ते बंटी भाई! अब कोई कन्फ़्यूज़न नहीं। मैं आपका असली 3D अवतार हूँ। मैं आपके साथ मुँह हिलाकर (Lip-sync) बोलूँगा और हाथ हिलाकर बात करूँगा।"</p>
-    </div>
-
-    <!-- Bottom Controls & Action Bar -->
-    <div class="bottom-action-dock">
-      
-      <!-- Hand Gestures & Movements -->
-      <div class="gestures-strip">
-        <span class="gestures-label">हाथ के मूवमेंट:</span>
-        <button class="gesture-btn" data-anim="wave">👋 हाथ हिलाओ (Wave)</button>
-        <button class="gesture-btn" data-anim="talk">🗣️ बात करते हुए हाथ हिलाओ</button>
-        <button class="gesture-btn" data-anim="think">🤔 सोचने की मुद्रा (Think)</button>
-        <button class="gesture-btn" data-anim="thumbs">👍 हाँ बोलो (Thumbs Up)</button>
-        <button class="gesture-btn active" data-anim="idle">🧘 शांत खड़े रहो (Idle)</button>
+    <!-- TOP HEADER -->
+    <header class="top-nav-bar">
+      <div class="brand-zone">
+        <div class="aura-logo-badge">
+          <svg viewBox="0 0 36 36" fill="none">
+            <path d="M18 3L3 31H11L18 16L25 31H33L18 3Z" fill="url(#logoG)"/>
+            <path d="M12 24H24L18 13L12 24Z" fill="#070c18"/>
+            <defs>
+              <linearGradient id="logoG" x1="3" y1="3" x2="33" y2="31" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#38bdf8"/>
+                <stop offset="0.5" stop-color="#818cf8"/>
+                <stop offset="1" stop-color="#c084fc"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <div class="brand-name">
+          <h1>AURA</h1>
+          <span>Personal AI Life OS</span>
+        </div>
       </div>
 
-      <!-- Dialogue Input Bar -->
-      <div class="dialogue-input-row">
-        <input type="text" id="userInput" placeholder="मुझसे हिंदी या इंग्लिश में कुछ भी बुलवाएँ..." value="नमस्ते बंटी! मैं तुम्हारा 3D अवतार हूँ।">
-        <button id="speakActionBtn" class="glow-send-btn">🔊 बुलवाएं (Speak)</button>
-        <button id="micActionBtn" class="mic-glow-btn" title="माइक से बोलें">🎙️ माइक</button>
+      <div class="header-center-search">
+        <span class="search-ico">🔍</span>
+        <input type="text" id="topSearchInput" placeholder="Ask AURA anything...">
+        <button class="top-mic-btn" id="topMicBtn">🎙️</button>
       </div>
+
+      <div class="header-right-meta">
+        <div class="live-clock-pill">
+          <span class="c-date" id="topLiveDate">Tue, 30 Sep 2026</span>
+          <span class="c-time" id="topLiveTime">07:24 AM</span>
+        </div>
+        <button class="icon-round-btn notif" title="Notifications">🔔<span class="red-badge">3</span></button>
+        <button class="icon-round-btn theme" id="themeBtn" title="Theme">☀️</button>
+        <button class="icon-round-btn sound" id="soundToggleBtn" title="Audio">🔊</button>
+        
+        <div class="user-chip-header">
+          <img src="aura-hero-v3.jpg" alt="Banti" class="user-thumb">
+          <div class="user-chip-text">
+            <span class="name">Banti</span>
+            <span class="online-tag"><span class="dot-g"></span> Online</span>
+          </div>
+          <button class="gear-btn">⚙️</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- 3-COLUMN LAYOUT -->
+    <div class="main-workspace">
+
+      <!-- LEFT SIDEBAR -->
+      <aside class="sidebar-left">
+        <nav class="side-nav-list">
+          <a href="#" class="nav-btn active" data-page="home"><span class="i">🏠</span> Home</a>
+          <a href="#" class="nav-btn" data-page="chat"><span class="i">💬</span> Chat</a>
+          <a href="#" class="nav-btn" data-page="voice"><span class="i">🎙️</span> Voice</a>
+          <a href="#" class="nav-btn" data-page="vision"><span class="i">👁️</span> Vision</a>
+          <a href="#" class="nav-btn" data-page="tasks"><span class="i">☑️</span> Tasks</a>
+          <a href="#" class="nav-btn" data-page="goals"><span class="i">🎯</span> Goals</a>
+          <a href="#" class="nav-btn" data-page="learning"><span class="i">📚</span> Learning</a>
+          <a href="#" class="nav-btn" data-page="projects"><span class="i">📁</span> Projects</a>
+          <a href="#" class="nav-btn" data-page="research"><span class="i">🔬</span> Research</a>
+          <a href="#" class="nav-btn" data-page="automation"><span class="i">⚙️</span> Automation</a>
+          <a href="#" class="nav-btn" data-page="browser"><span class="i">🌐</span> Browser Agent</a>
+          <a href="#" class="nav-btn" data-page="computer"><span class="i">🖥️</span> Computer Use</a>
+          <a href="#" class="nav-btn" data-page="memory"><span class="i">⏱️</span> Memory</a>
+          <a href="#" class="nav-btn" data-page="files"><span class="i">📄</span> Files & Docs</a>
+          <a href="#" class="nav-btn" data-page="calendar"><span class="i">📅</span> Calendar</a>
+          <a href="#" class="nav-btn" data-page="devices"><span class="i">📱</span> Devices</a>
+          <a href="#" class="nav-btn" data-page="settings"><span class="i">⚙️</span> Settings</a>
+        </nav>
+      </aside>
+
+      <!-- CENTER HERO STAGE -->
+      <main class="center-content-hub">
+        
+        <!-- MAIN HERO BANNER (Developer Desk & Banti Avatar) -->
+        <div class="hero-workstation-card">
+          <!-- Background image of Banti's workstation -->
+          <img src="aura-hero-v3.jpg" alt="Banti Workstation" class="hero-bg-photo">
+
+          <!-- OVERLAYS ON LEFT OF PHOTO (PROPERLY WORKING) -->
+          <div class="photo-left-overlays">
+            
+            <!-- 1. Live Status Card with Audio Waves -->
+            <div class="glass-widget status-widget">
+              <div class="w-head">
+                <span class="w-glyph">✨</span>
+                <span class="w-title">Live Status</span>
+                <span class="badge-on"><span class="dot-sm-g"></span> Online</span>
+              </div>
+              <ul class="status-items">
+                <li id="stListening"><span class="dot-blue"></span> Listening</li>
+                <li id="stThinking"><span class="dot-yellow"></span> Thinking</li>
+                <li id="stSpeaking"><span class="dot-pink"></span> Speaking</li>
+                <li id="stWorking"><span class="dot-green"></span> Working</li>
+                <li id="stWatching"><span class="dot-cyan"></span> Watching (Camera)</li>
+                <li id="stFollowing"><span class="dot-purple"></span> Following You</li>
+              </ul>
+              <!-- Audio Wave Visualizer -->
+              <div class="sound-wave-strip" id="soundWaveStrip">
+                <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+              </div>
+            </div>
+
+            <!-- 2. REAL WORKING LIVE WEBCAM (Camera View) -->
+            <div class="glass-widget camera-view-widget">
+              <div class="w-head">
+                <span class="w-glyph">📷</span>
+                <span class="w-title">Camera View</span>
+                <span class="badge-live"><span class="dot-red"></span> Live</span>
+              </div>
+              <div class="camera-video-wrapper" id="cameraVideoWrapper">
+                <!-- Real live webcam stream -->
+                <video id="webcamVideo" autoplay playsinline muted></video>
+                <div class="camera-hud-brackets">
+                  <div class="hud-corner top-left"></div>
+                  <div class="hud-corner top-right"></div>
+                  <div class="hud-corner bottom-left"></div>
+                  <div class="hud-corner bottom-right"></div>
+                </div>
+                <div class="cam-fallback-face" id="camFallbackFace">
+                  <img src="aura-hero-v3.jpg" alt="Face">
+                </div>
+              </div>
+              <button class="cam-toggle-btn" id="camToggleBtn">🔴 Start Webcam Feed</button>
+            </div>
+
+            <!-- 3. REAL WORKING SCREEN MIRROR (Screen View) -->
+            <div class="glass-widget screen-view-widget">
+              <div class="w-head">
+                <span class="w-glyph">💻</span>
+                <span class="w-title">Screen View</span>
+                <span class="badge-live"><span class="dot-red"></span> Live</span>
+              </div>
+              <div class="screen-video-wrapper" id="screenVideoWrapper">
+                <video id="screenVideo" autoplay playsinline muted></video>
+                <div class="screen-code-simulation" id="screenCodeSim">
+                  <div class="code-line"><span class="c-blue">const</span> aura = <span class="c-purple">new</span> AURA();</div>
+                  <div class="code-line">aura.<span class="c-green">listen</span>(banti.<span class="c-yellow">voice</span>);</div>
+                  <div class="code-line"><span class="c-pink">await</span> aura.<span class="c-cyan">execute</span>();</div>
+                </div>
+              </div>
+              <button class="screen-toggle-btn" id="screenToggleBtn">🖥️ Share My Screen</button>
+            </div>
+
+          </div>
+
+          <!-- OVERLAY ON RIGHT OF PHOTO: Speech Bubble -->
+          <div class="hero-dialogue-bubble" id="heroDialogueBubble">
+            <h3>Hi Banti! 👋</h3>
+            <p id="dialogueParagraph">I'm AURA, your personal AI. I'm here with you for learning, projects, work and life.</p>
+            <span class="dialogue-prompt">What shall we do today?</span>
+          </div>
+
+          <!-- PROMPT & VOICE BAR IN FRONT OF PHOTO -->
+          <div class="hero-prompt-bar">
+            <button class="glow-mic-trigger" id="glowMicTrigger" title="माइक से बोलें">🎙️</button>
+            <input type="text" id="voiceCommandInput" placeholder="Talk to AURA in your own voice..." value="नमस्ते बंटी! मैं AURA हूँ, आपकी सेवा में तैयार।">
+            <button class="camera-snap-trigger" id="cameraSnapTrigger" title="Take a Photo / Vision">📷</button>
+            <button class="send-prompt-trigger" id="sendPromptTrigger" title="Send">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+              </svg>
+            </button>
+          </div>
+
+        </div>
+
+        <!-- 10 WORKING ACTION CARDS ROW (EXACTLY MATCHING IMAGE) -->
+        <div class="action-cards-deck">
+          
+          <div class="deck-card active" data-action="talk">
+            <div class="card-icon blue">🎙️</div>
+            <h4>Talk</h4>
+            <p>Speak with AURA<br>(Your Voice)</p>
+          </div>
+
+          <div class="deck-card" data-action="see">
+            <div class="card-icon cyan">📷</div>
+            <h4>See</h4>
+            <p>Camera & Screen<br>Vision</p>
+          </div>
+
+          <div class="deck-card" data-action="learn">
+            <div class="card-icon purple">📖</div>
+            <h4>Learn</h4>
+            <p>Study, Practice<br>& Get Notes</p>
+          </div>
+
+          <div class="deck-card" data-action="build">
+            <div class="card-icon emerald">&lt;/&gt;</div>
+            <h4>Build</h4>
+            <p>Code, Debug<br>& Develop</p>
+          </div>
+
+          <div class="deck-card" data-action="research">
+            <div class="card-icon amber">🔍</div>
+            <h4>Research</h4>
+            <p>Find, Analyze<br>& Summarize</p>
+          </div>
+
+          <div class="deck-card" data-action="automate">
+            <div class="card-icon orange">⚙️</div>
+            <h4>Automate</h4>
+            <p>Create Workflows<br>& Agents</p>
+          </div>
+
+          <div class="deck-card" data-action="manage">
+            <div class="card-icon indigo">🎛️</div>
+            <h4>Manage</h4>
+            <p>Tasks, Projects<br>& Calendar</p>
+          </div>
+
+          <div class="deck-card" data-action="memory">
+            <div class="card-icon violet">⏱️</div>
+            <h4>Memory</h4>
+            <p>Tasks, Projects<br>& Calendar</p>
+          </div>
+
+          <div class="deck-card" data-action="profile_everything">
+            <div class="card-icon fuchsia">🗄️</div>
+            <h4>Profile</h4>
+            <p>Everything About<br>You</p>
+          </div>
+
+          <div class="deck-card" data-action="profile_info">
+            <div class="card-icon pink">👤</div>
+            <h4>Profile</h4>
+            <p>Your Info<br>& Preferences</p>
+          </div>
+
+        </div>
+
+      </main>
+
+      <!-- RIGHT SIDEBAR (Today's Plan, Project, Goals) -->
+      <aside class="sidebar-right">
+
+        <!-- Today's Plan -->
+        <div class="right-card-box plan-box">
+          <div class="card-top-row">
+            <h3><span class="icon">📋</span> Today's Plan</h3>
+            <a href="#" class="view-link">View All &gt;</a>
+          </div>
+          <div class="plan-interactive-items" id="interactivePlanItems">
+            <div class="plan-row done">
+              <span class="time">06:30</span>
+              <span class="desc">Morning Brief with AURA</span>
+              <span class="chk">✔</span>
+            </div>
+            <div class="plan-row done">
+              <span class="time">07:00</span>
+              <span class="desc">Study: AI Automation (1 hr)</span>
+              <span class="chk">✔</span>
+            </div>
+            <div class="plan-row current">
+              <span class="time">09:00</span>
+              <span class="desc">AURA Project Development</span>
+              <span class="circle active"></span>
+            </div>
+            <div class="plan-row">
+              <span class="time">12:00</span>
+              <span class="desc">SSC Practice (30 Q)</span>
+              <span class="circle"></span>
+            </div>
+            <div class="plan-row">
+              <span class="time">15:00</span>
+              <span class="desc">GitHub Review & Commit</span>
+              <span class="circle"></span>
+            </div>
+            <div class="plan-row">
+              <span class="time">17:00</span>
+              <span class="desc">Learning: MCP / Agents</span>
+              <span class="circle purple"></span>
+            </div>
+            <div class="plan-row">
+              <span class="time">20:00</span>
+              <span class="desc">Personal Project Planning</span>
+              <span class="circle purple"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Current Project -->
+        <div class="right-card-box project-box">
+          <div class="card-top-row">
+            <h3><span class="icon">📁</span> Current Project</h3>
+            <a href="https://github.com/Bantikevat/aura-os" target="_blank" class="view-link">View All &gt;</a>
+          </div>
+          <div class="project-headline">AURA – Personal AI Life OS</div>
+          <div class="proj-meter-track">
+            <div class="proj-meter-fill" style="width: 68%;"></div>
+          </div>
+          <div class="proj-pct-badge">68%</div>
+          <div class="proj-tags-flex">
+            <span class="tag">Next.js</span>
+            <span class="tag">Node.js</span>
+            <span class="tag">MongoDB</span>
+            <span class="tag">LangGraph</span>
+            <span class="tag">n8n</span>
+          </div>
+        </div>
+
+        <!-- Goals -->
+        <div class="right-card-box goals-box">
+          <div class="card-top-row">
+            <h3><span class="icon">🎯</span> Goals</h3>
+            <a href="#" class="view-link">View All &gt;</a>
+          </div>
+          <div class="goals-meter-list">
+            <div class="goal-item">
+              <div class="g-info"><span>Become AI Automation Engineer</span> <span>68%</span></div>
+              <div class="g-bar"><div class="g-fill blue" style="width: 68%;"></div></div>
+            </div>
+            <div class="goal-item">
+              <div class="g-info"><span>Complete AURA V1</span> <span>45%</span></div>
+              <div class="g-bar"><div class="g-fill cyan" style="width: 45%;"></div></div>
+            </div>
+            <div class="goal-item">
+              <div class="g-info"><span>GATE 2027 Preparation</span> <span>32%</span></div>
+              <div class="g-bar"><div class="g-fill purple" style="width: 32%;"></div></div>
+            </div>
+            <div class="goal-item">
+              <div class="g-info"><span>Financial Stability</span> <span>55%</span></div>
+              <div class="g-bar"><div class="g-fill green" style="width: 55%;"></div></div>
+            </div>
+            <div class="goal-item">
+              <div class="g-info"><span>Health & Fitness</span> <span>40%</span></div>
+              <div class="g-bar"><div class="g-fill pink" style="width: 40%;"></div></div>
+            </div>
+          </div>
+        </div>
+
+      </aside>
 
     </div>
 
-  </main>
+  </div>
 
-  <script src="avatar3d.js"></script>
+  <script src="v3_engine.js"></script>
 </body>
 </html>
