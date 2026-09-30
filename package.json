@@ -5,7 +5,9 @@
   "private": true,
   "scripts": {
     "start": "node packages/server/src/index.js",
-    "test": "node packages/core/src/demo.js",
+    "test": "node packages/core/src/demo.js && node test/phase1_test_suite.js && node test/phase2_test_suite.js",
+    "test:phase1": "node test/phase1_test_suite.js",
+    "test:phase2": "node test/phase2_test_suite.js",
     "demo": "node packages/core/src/demo.js"
   },
   "keywords": [

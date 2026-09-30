@@ -5,6 +5,7 @@ const path = require('path');
 const { AuraEngine } = require('../../core/src/engine');
 const { osBridge } = require('./osBridge');
 const { normalizeAndParseIntent } = require('../../core/src/intents/commandNormalizer');
+const { intentUnderstandingService } = require('../../core/src/intents/IntentUnderstandingService');
 
 const aura = new AuraEngine();
 const PORT = process.env.PORT || 3000;
@@ -145,8 +146,21 @@ const server = http.createServer(async (req, res) => {
     const userPrompt = (body.prompt || body.query || '').trim();
     const actionId = body.actionId || osBridge.generateActionId();
 
-    // 1. Structured Intent Normalization & Safe OS Bridge Execution
-    const parsed = normalizeAndParseIntent(userPrompt);
+    // 1. Multi-Tier Intent Understanding (Tier 1 Fast Path -> Tier 2 AI -> Tier 3 Validation)
+    const parsed = await intentUnderstandingService.process(userPrompt);
+
+    // If low confidence or unknown app requires user clarification
+    if (parsed.requiresClarification) {
+      return sendJSON(res, 200, {
+        status: 'clarification_required',
+        actionId,
+        source: parsed.source,
+        provider: parsed.provider,
+        response: parsed.clarificationMessage || 'Aap kya karna chahte hain? Kripya spasht karein.'
+      });
+    }
+
+    // If validated as an executable action
     if (parsed.isCommand) {
       const osResult = await osBridge.executeAction({
         actionId,
@@ -159,6 +173,8 @@ const server = http.createServer(async (req, res) => {
       return sendJSON(res, 200, {
         status: osResult.success ? 'verified_complete' : 'failed',
         actionId,
+        source: parsed.source,
+        provider: parsed.provider,
         intent: osResult.intent,
         target: osResult.target,
         action: osResult.action,
@@ -171,7 +187,7 @@ const server = http.createServer(async (req, res) => {
       });
     }
 
-    // 2. Standard Engine Execution (Goals, Memory, NIST Confirmation Gates, Greetings)
+    // 2. Standard Engine Execution (Goals, Memory, NIST Confirmation Gates, Greetings, Chat)
     const result = await aura.executeIntent({
       userPrompt,
       userApproved: !!body.userApproved,
