@@ -14,7 +14,155 @@
   <div class="app-root">
 
     <!-- TOP LUXURY COMMAND CENTER HEADER -->
-    <header id="auraHeaderContainer" class="aura-luxury-header"></header>
+        <!-- LUXURY AURA COMMAND CENTER HEADER -->
+    <header class="top-nav-bar" id="auraHeaderContainer">
+      <!-- 1. LEFT: Brand & Live System Status -->
+      <div class="brand-zone" id="auraLogoTrigger" title="AURA Life OS — Click to return Home">
+        <div class="aura-logo-badge">
+          <svg viewBox="0 0 36 36" fill="none">
+            <path d="M18 3L3 31H11L18 16L25 31H33L18 3Z" fill="url(#logoG)"/>
+            <path d="M12 24H24L18 13L12 24Z" fill="#070c18"/>
+            <defs>
+              <linearGradient id="logoG" x1="3" y1="3" x2="33" y2="31" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#38bdf8"/>
+                <stop offset="0.5" stop-color="#818cf8"/>
+                <stop offset="1" stop-color="#c084fc"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <div class="brand-name">
+          <div class="brand-title-flex">
+            <h1>AURA</h1>
+            <span class="system-heartbeat-tag" id="systemHeartbeatTag" title="Live System Health">
+              <span class="heartbeat-dot online" id="systemHeartbeatDot"></span>
+              <span class="heartbeat-text" id="systemHeartbeatText">Online</span>
+            </span>
+          </div>
+          <span>Personal AI Life OS</span>
+        </div>
+      </div>
+
+      <!-- 2. CENTER: Universal Command & Search Bar -->
+      <div class="header-center-search" id="headerCenterSearchBox">
+        <span class="search-ico">🔍</span>
+        <input 
+          type="text" 
+          id="topSearchInput" 
+          placeholder="Ask AURA anything... (e.g. 'Create task: ...', 'Open settings')"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <span class="search-state-pill" id="searchStatePill" style="display:none;"></span>
+        <kbd class="cmd-kbd-shortcut" title="Press Ctrl+K to search">Ctrl K</kbd>
+        <button class="top-mic-btn" id="topMicBtn" title="Speak to AURA (Hindi Voice Engine)">🎙️</button>
+
+        <!-- Command Suggestions & Intent Dropdown -->
+        <div class="command-suggestions-dropdown" id="cmdSuggestionsDropdown" style="display:none;"></div>
+      </div>
+
+      <!-- 3. RIGHT: Live Clock, Vision, Focus, Notif, Theme & Profile -->
+      <div class="header-right-meta">
+        <!-- Live Clock Pill -->
+        <div class="live-clock-pill" id="headerLiveClockPill" title="Local System Timezone">
+          <span class="c-date" id="topLiveDate">--</span>
+          <span class="c-time" id="topLiveTime">--:--</span>
+        </div>
+
+        <!-- Vision Control Button & Dropdown -->
+        <div class="header-ctrl-wrap">
+          <button class="icon-round-btn vision" id="topVisionBtn" title="Vision Engine (Webcam & Screen)">
+            👁️<span class="ctrl-status-dot" id="visionStatusDot"></span>
+          </button>
+          <div class="header-popover-card vision-popover" id="visionDropdown" style="display:none;">
+            <div class="popover-title">Vision Engine</div>
+            <div class="popover-item" id="menuToggleWebcam">
+              <span class="ico">🔴</span> <span class="txt">Toggle Live Webcam</span>
+            </div>
+            <div class="popover-item" id="menuToggleScreen">
+              <span class="ico">🖥️</span> <span class="txt">Toggle Screen Share</span>
+            </div>
+            <div class="popover-item" id="menuOpenVisionPage">
+              <span class="ico">👁️</span> <span class="txt">Open Vision Hub</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Focus Mode Button & Dropdown -->
+        <div class="header-ctrl-wrap">
+          <button class="icon-round-btn focus" id="topFocusBtn" title="Focus Mode / Pomodoro">
+            🎯<span class="focus-timer-pill" id="focusTimerPill" style="display:none;">25m</span>
+          </button>
+          <div class="header-popover-card focus-popover" id="focusDropdown" style="display:none;">
+            <div class="popover-title">Deep Work Focus</div>
+            <div class="popover-item" data-duration="25">
+              <span class="ico">⏱️</span> 25 min Pomodoro
+            </div>
+            <div class="popover-item" data-duration="50">
+              <span class="ico">⚡</span> 50 min Deep Session
+            </div>
+            <div class="popover-item" data-duration="15">
+              <span class="ico">☕</span> 15 min Quick Sprint
+            </div>
+            <div class="popover-item danger" id="exitFocusBtn" style="display:none;">
+              <span class="ico">⏹️</span> Exit Focus Mode
+            </div>
+          </div>
+        </div>
+
+        <!-- Notifications Button & Drawer -->
+        <div class="header-ctrl-wrap">
+          <button class="icon-round-btn notif" id="topNotifBtn" title="Notifications & System Audits">
+            🔔<span class="red-badge" id="topNotifBadge">0</span>
+          </button>
+          <div class="header-popover-card notif-popover" id="notifDrawer" style="display:none;">
+            <div class="notif-drawer-header">
+              <h4>Notifications</h4>
+              <button class="btn-text-link" id="btnMarkAllRead">Mark all read</button>
+            </div>
+            <div class="notif-scroll-list" id="notifListContainer">
+              <div class="empty-notif-msg">No new notifications</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Theme Toggle Button -->
+        <button class="icon-round-btn theme" id="themeBtn" title="Toggle Theme (Dark / Cyber / Light)">☀️</button>
+
+        <!-- User Profile Chip & Drawer -->
+        <div class="header-ctrl-wrap">
+          <div class="user-chip-header" id="userProfileChip" title="User Profile & Settings">
+            <img src="aura-hero-v3.jpg" alt="Banti" class="user-thumb" onerror="this.src='aura-master.jpg'">
+            <div class="user-chip-text">
+              <span class="name">Banti</span>
+              <span class="online-tag"><span class="dot-g"></span> Online</span>
+            </div>
+            <button class="gear-btn" tabindex="-1">⚙️</button>
+          </div>
+          <div class="header-popover-card profile-popover" id="profileDrawer" style="display:none;">
+            <div class="profile-drawer-top">
+              <div class="user-name-title">Banti Kevat</div>
+              <div class="user-role-sub">Lead AI Engineer · AURA Life OS</div>
+            </div>
+            <div class="popover-item" id="pMenuSettings">
+              <span class="ico">⚙️</span> Preferences & Settings
+            </div>
+            <div class="popover-item" id="pMenuVoiceAvatar">
+              <span class="ico">🎙️</span> Voice & 3D Avatar
+            </div>
+            <div class="popover-item" id="pMenuMemory">
+              <span class="ico">⏱️</span> Personal Memory Store
+            </div>
+            <div class="popover-item" id="pMenuAudits">
+              <span class="ico">🔒</span> NIST Trust & Audits
+            </div>
+            <div class="popover-item logout" id="pMenuLogout">
+              <span class="ico">🚪</span> Reset Session
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
 
     <!-- 3-COLUMN LAYOUT -->
     <div class="main-workspace">
@@ -323,5 +471,21 @@
   </div>
 
   <script type="module" src="v3_engine.js"></script>
+
+  <!-- NIST Security Gate Confirmation Modal -->
+  <div class="nist-modal-backdrop" id="nistApprovalModal" style="display:none;">
+    <div class="nist-modal-card">
+      <div class="nist-modal-header">
+        <span class="warning-icon">⚠️</span>
+        <h3>Safety Confirmation Required</h3>
+      </div>
+      <p class="nist-modal-warning" id="nistApprovalMessage"></p>
+      <div class="nist-modal-actions">
+        <button class="btn-modal-cancel" id="btnCancelNistAction">Cancel</button>
+        <button class="btn-modal-confirm" id="btnConfirmNistAction">Approve & Execute</button>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>
