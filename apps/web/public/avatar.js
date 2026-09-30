@@ -4,8 +4,10 @@ let avatarGroup, headMesh, mouthMesh, eyeLeft, eyeRight, neck, bodyMesh, armLeft
 let isSpeaking = false;
 let currentActivity = 'idle';
 let clock = new THREE.Clock();
+let customGltfModel = null;
+let mixer = null;
 
-// Initialize Speech Synthesis
+// Speech Synthesis
 const synth = window.speechSynthesis;
 let voices = [];
 const voiceSelect = document.getElementById('voiceSelect');
@@ -16,12 +18,16 @@ const micBtn = document.getElementById('micBtn');
 const avatarStateText = document.getElementById('avatarStateText');
 const avatarUploadBtn = document.getElementById('avatarUploadBtn');
 const glbFileInput = document.getElementById('glbFileInput');
+const openSelfieModalBtn = document.getElementById('openSelfieModalBtn');
+const rpmModal = document.getElementById('rpmModal');
+const closeModalBtn = document.getElementById('closeModalBtn');
+const rpmIframe = document.getElementById('rpmIframe');
+const loadingSpinner = document.getElementById('loadingSpinner');
 
 function populateVoices() {
   voices = synth.getVoices();
   voiceSelect.innerHTML = '';
   
-  // Prioritize Hindi / Indian voices
   const sorted = voices.sort((a, b) => {
     const aIsHi = a.lang.includes('hi') || a.lang.includes('IN');
     const bIsHi = b.lang.includes('hi') || b.lang.includes('IN');
@@ -45,7 +51,7 @@ if (speechSynthesis.onvoiceschanged !== undefined) {
 }
 
 // ----------------------------------------------------
-// Three.js 3D Avatar Setup
+// Three.js 3D Setup
 // ----------------------------------------------------
 function init3D() {
   const container = document.getElementById('canvasContainer');
@@ -67,20 +73,20 @@ function init3D() {
   controls = new THREE.OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.dampingFactor = 0.05;
-  controls.target.set(0, 1.4, 0);
-  controls.minDistance = 1.2;
+  controls.target.set(0, 1.35, 0);
+  controls.minDistance = 1.0;
   controls.maxDistance = 4.5;
   controls.maxPolarAngle = Math.PI / 2;
 
   // Studio Lighting
-  const hemiLight = new THREE.HemisphereLight(0xffffff, 0x111122, 0.8);
+  const hemiLight = new THREE.HemisphereLight(0xffffff, 0x111122, 1.0);
   scene.add(hemiLight);
 
-  const keyLight = new THREE.DirectionalLight(0x38bdf8, 1.5);
+  const keyLight = new THREE.DirectionalLight(0x38bdf8, 1.6);
   keyLight.position.set(3, 4, 3);
   scene.add(keyLight);
 
-  const fillLight = new THREE.DirectionalLight(0xc084fc, 0.8);
+  const fillLight = new THREE.DirectionalLight(0xc084fc, 1.0);
   fillLight.position.set(-3, 2, 2);
   scene.add(fillLight);
 
@@ -88,67 +94,49 @@ function init3D() {
   rimLight.position.set(0, 3, -3);
   scene.add(rimLight);
 
-  // Ground Grid Floor
   const grid = new THREE.GridHelper(20, 40, 0x38bdf8, 0x112233);
   grid.position.y = 0;
   scene.add(grid);
 
-  // Build Procedural High-Detail 3D Cyber-Humanoid Avatar
-  createHumanoidAvatar();
+  createProceduralAvatar();
 
   window.addEventListener('resize', onWindowResize);
   animate();
 }
 
-function createHumanoidAvatar() {
+function createProceduralAvatar() {
   avatarGroup = new THREE.Group();
 
-  // Materials
-  const skinMaterial = new THREE.MeshStandardMaterial({
-    color: 0xe0ac69, // Warm skin tone
-    roughness: 0.45,
-    metalness: 0.1
-  });
+  const skinMat = new THREE.MeshStandardMaterial({ color: 0xd4a373, roughness: 0.5 });
+  const suitMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.3, metalness: 0.3 });
 
-  const suitMaterial = new THREE.MeshStandardMaterial({
-    color: 0x0f172a,
-    roughness: 0.3,
-    metalness: 0.4
-  });
-
-  const glowCyanMaterial = new THREE.MeshStandardMaterial({
-    color: 0x38bdf8,
-    emissive: 0x38bdf8,
-    emissiveIntensity: 0.6
-  });
-
-  // Body / Torso
-  const bodyGeo = new THREE.CylinderGeometry(0.24, 0.18, 0.6, 32);
-  bodyMesh = new THREE.Mesh(bodyGeo, suitMaterial);
-  bodyMesh.position.y = 1.0;
+  // Body
+  const bodyGeo = new THREE.CylinderGeometry(0.22, 0.18, 0.65, 32);
+  bodyMesh = new THREE.Mesh(bodyGeo, suitMat);
+  bodyMesh.position.y = 0.95;
   avatarGroup.add(bodyMesh);
 
   // Neck
   const neckGeo = new THREE.CylinderGeometry(0.08, 0.09, 0.12, 16);
-  neck = new THREE.Mesh(neckGeo, skinMaterial);
-  neck.position.y = 1.34;
+  neck = new THREE.Mesh(neckGeo, skinMat);
+  neck.position.y = 1.32;
   avatarGroup.add(neck);
 
-  // Head (Parent for face, eyes, mouth)
+  // Head
   const headGeo = new THREE.SphereGeometry(0.16, 32, 32);
-  headMesh = new THREE.Mesh(headGeo, skinMaterial);
-  headMesh.position.y = 1.50;
+  headMesh = new THREE.Mesh(headGeo, skinMat);
+  headMesh.position.y = 1.48;
   headMesh.scale.set(0.95, 1.15, 1.0);
   avatarGroup.add(headMesh);
 
-  // Hair / Stylized Crown
-  const hairGeo = new THREE.SphereGeometry(0.17, 24, 24);
+  // Hair
+  const hairGeo = new THREE.SphereGeometry(0.168, 24, 24);
   const hairMat = new THREE.MeshStandardMaterial({ color: 0x1e1b18, roughness: 0.9 });
   const hair = new THREE.Mesh(hairGeo, hairMat);
   hair.position.set(0, 0.04, -0.02);
   headMesh.add(hair);
 
-  // Eyes (Left & Right)
+  // Eyes
   const eyeGeo = new THREE.SphereGeometry(0.025, 16, 16);
   const eyeMat = new THREE.MeshStandardMaterial({ color: 0x0ea5e9, emissive: 0x0284c7, emissiveIntensity: 0.4 });
   eyeLeft = new THREE.Mesh(eyeGeo, eyeMat);
@@ -159,38 +147,70 @@ function createHumanoidAvatar() {
   eyeRight.position.set(0.06, 0.02, 0.14);
   headMesh.add(eyeRight);
 
-  // Mouth for Real-Time Lip-Sync
+  // Mouth for Lip-sync
   const mouthGeo = new THREE.BoxGeometry(0.06, 0.015, 0.02);
   const mouthMat = new THREE.MeshStandardMaterial({ color: 0x881337 });
   mouthMesh = new THREE.Mesh(mouthGeo, mouthMat);
   mouthMesh.position.set(0, -0.07, 0.14);
   headMesh.add(mouthMesh);
 
-  // Arms (Left & Right)
-  const armGeo = new THREE.CylinderGeometry(0.05, 0.04, 0.5, 16);
-  armLeft = new THREE.Mesh(armGeo, suitMaterial);
-  armLeft.position.set(-0.32, 0.95, 0);
+  // Arms
+  const armGeo = new THREE.CylinderGeometry(0.045, 0.04, 0.5, 16);
+  armLeft = new THREE.Mesh(armGeo, suitMat);
+  armLeft.position.set(-0.3, 0.95, 0);
   avatarGroup.add(armLeft);
 
-  armRight = new THREE.Mesh(armGeo, suitMaterial);
-  armRight.position.set(0.32, 0.95, 0);
+  armRight = new THREE.Mesh(armGeo, suitMat);
+  armRight.position.set(0.3, 0.95, 0);
   avatarGroup.add(armRight);
-
-  // Glowing Cyber Accent on Chest (Life Core)
-  const coreGeo = new THREE.RingGeometry(0.03, 0.05, 32);
-  const coreMesh = new THREE.Mesh(coreGeo, glowCyanMaterial);
-  coreMesh.position.set(0, 1.1, 0.22);
-  avatarGroup.add(coreMesh);
 
   scene.add(avatarGroup);
 }
 
 // ----------------------------------------------------
-// Real-Time Lip Sync & Speech Activity
+// Load Custom GLTF/GLB Avatar (From URL or File)
+// ----------------------------------------------------
+function loadGLBAvatar(urlOrBuffer) {
+  loadingSpinner.style.display = 'flex';
+  const loader = new THREE.GLTFLoader();
+
+  const onLoaded = (gltf) => {
+    loadingSpinner.style.display = 'none';
+    if (avatarGroup) scene.remove(avatarGroup);
+    
+    customGltfModel = gltf.scene;
+    customGltfModel.position.set(0, 0, 0);
+    customGltfModel.scale.set(1, 1, 1);
+
+    // Adjust camera target to character face
+    controls.target.set(0, 1.45, 0);
+    camera.position.set(0, 1.5, 1.8);
+
+    scene.add(customGltfModel);
+    avatarGroup = customGltfModel;
+
+    speakText("Shabash Banti! Tumhara asli 3D avatar load ho gaya hai. Ab main bilkul tumhari tarah dikh raha hoon!");
+  };
+
+  const onError = (err) => {
+    loadingSpinner.style.display = 'none';
+    console.error('Error loading GLB:', err);
+    alert('Failed to load 3D Avatar: ' + err.message);
+  };
+
+  if (typeof urlOrBuffer === 'string') {
+    loader.load(urlOrBuffer, onLoaded, undefined, onError);
+  } else {
+    loader.parse(urlOrBuffer, '', onLoaded, onError);
+  }
+}
+
+// ----------------------------------------------------
+// Speech & Lip-Sync
 // ----------------------------------------------------
 function speakText(text) {
   if (!text) return;
-  synth.cancel(); // Stop any ongoing speech
+  synth.cancel();
 
   const utterance = new SpeechSynthesisUtterance(text);
   const selectedVoiceIdx = voiceSelect.value;
@@ -223,7 +243,7 @@ function speakText(text) {
 }
 
 // ----------------------------------------------------
-// Animation Loop (Breathing, Gestures, Mouth Moving)
+// Animation Loop
 // ----------------------------------------------------
 function animate() {
   requestAnimationFrame(animate);
@@ -231,11 +251,11 @@ function animate() {
   const time = clock.getElapsedTime();
 
   if (avatarGroup) {
-    // 1. Idle Breathing (Spine & chest subtle bounce)
-    const breath = Math.sin(time * 2.5) * 0.008;
+    // Breathing
+    const breath = Math.sin(time * 2.5) * 0.006;
     avatarGroup.position.y = breath;
 
-    // 2. Head Subtle Natural Movement
+    // Head movement
     if (headMesh) {
       if (currentActivity === 'idle') {
         headMesh.rotation.y = Math.sin(time * 0.8) * 0.08;
@@ -251,14 +271,14 @@ function animate() {
       }
     }
 
-    // 3. Real-Time Lip-Sync (Mouth opening & viseme simulation)
+    // Lip sync
     if (isSpeaking && mouthMesh) {
       const mouthOpen = 1.0 + Math.abs(Math.sin(time * 18)) * 3.2;
       const mouthWidth = 1.0 + Math.sin(time * 12) * 0.3;
       mouthMesh.scale.set(mouthWidth, mouthOpen, 1);
     }
 
-    // 4. Arms & Gestures
+    // Arms
     if (armRight) {
       if (currentActivity === 'wave') {
         armRight.rotation.z = Math.PI / 1.6 + Math.sin(time * 10) * 0.35;
@@ -272,7 +292,7 @@ function animate() {
       }
     }
 
-    // 5. Eye Blinking
+    // Blink
     if (eyeLeft && eyeRight) {
       const blink = (Math.sin(time * 3) > 0.96) ? 0.1 : 1.0;
       eyeLeft.scale.y = blink;
@@ -292,29 +312,21 @@ function onWindowResize() {
 }
 
 // ----------------------------------------------------
-// UI Event Handlers
+// UI Events & Ready Player Me Modal Integration
 // ----------------------------------------------------
-speakBtn.addEventListener('click', () => {
-  speakText(speakInput.value.trim());
-});
-
+speakBtn.addEventListener('click', () => speakText(speakInput.value.trim()));
 speakInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') speakText(speakInput.value.trim());
 });
 
-// Activity buttons
 document.querySelectorAll('.act-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const action = btn.dataset.action;
     currentActivity = action;
     updateActivityButtons(action);
-    if (action === 'wave') {
-      speakText("Hello Banti! Main aapki activity mirror kar raha hoon.");
-    } else if (action === 'think') {
-      speakText("Aapki baat par soch raha hoon...");
-    } else if (action === 'nod') {
-      speakText("Haan bilkul, main aapse poori tarah sahmat hoon!");
-    }
+    if (action === 'wave') speakText("Hello Banti! Main aapke sath hoon.");
+    else if (action === 'think') speakText("Soch raha hoon...");
+    else if (action === 'nod') speakText("Haan, bilkul sahi baat hai!");
   });
 });
 
@@ -324,43 +336,55 @@ function updateActivityButtons(action) {
   });
 }
 
-// ----------------------------------------------------
-// Ready Player Me / Custom .GLB Avatar Loader
-// ----------------------------------------------------
-avatarUploadBtn.addEventListener('click', () => {
-  glbFileInput.click();
+// Open Ready Player Me Selfie Creator
+openSelfieModalBtn.addEventListener('click', () => {
+  rpmIframe.src = 'https://demo.readyplayer.me/avatar?frameApi';
+  rpmModal.style.display = 'flex';
 });
 
+closeModalBtn.addEventListener('click', () => {
+  rpmModal.style.display = 'none';
+  rpmIframe.src = '';
+});
+
+// Listen for Avatar Created Event from Ready Player Me
+window.addEventListener('message', (event) => {
+  const data = event.data;
+  let json;
+  try {
+    json = typeof data === 'string' ? JSON.parse(data) : data;
+  } catch {
+    return;
+  }
+
+  // When user clicks 'Next' in Ready Player Me after taking selfie
+  if (json?.source === 'readyplayerme' && json.eventName === 'v1.avatar.exported') {
+    const avatarGlbUrl = json.data.url;
+    console.log('Exported Avatar GLB URL:', avatarGlbUrl);
+    rpmModal.style.display = 'none';
+    rpmIframe.src = '';
+    loadGLBAvatar(avatarGlbUrl);
+  }
+});
+
+// Manual File Upload (.glb)
+avatarUploadBtn.addEventListener('click', () => glbFileInput.click());
 glbFileInput.addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (!file) return;
 
   const reader = new FileReader();
   reader.onload = function(event) {
-    const contents = event.target.result;
-    const loader = new THREE.GLTFLoader();
-    loader.parse(contents, '', (gltf) => {
-      if (avatarGroup) scene.remove(avatarGroup);
-      avatarGroup = gltf.scene;
-      avatarGroup.position.set(0, 0, 0);
-      avatarGroup.scale.set(1, 1, 1);
-      scene.add(avatarGroup);
-      speakText("Aapka custom 3D avatar successfully load ho gaya hai!");
-    }, (err) => {
-      console.error('Error loading GLB:', err);
-      alert('Error parsing 3D model: ' + err.message);
-    });
+    loadGLBAvatar(event.target.result);
   };
   reader.readAsArrayBuffer(file);
 });
 
-// Microphone Voice Input (Web Speech Recognition)
+// Microphone Voice Input
 if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
   const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
   const recognition = new SpeechRec();
   recognition.lang = 'hi-IN';
-  recognition.continuous = false;
-  recognition.interimResults = false;
 
   recognition.onstart = () => {
     micBtn.classList.add('recording');
@@ -380,14 +404,7 @@ if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
     avatarStateText.style.color = '#34d399';
   };
 
-  micBtn.addEventListener('click', () => {
-    recognition.start();
-  });
-} else {
-  micBtn.title = 'Speech Recognition not supported in this browser';
+  micBtn.addEventListener('click', () => recognition.start());
 }
 
-// Start 3D Engine on load
-window.addEventListener('DOMContentLoaded', () => {
-  init3D();
-});
+window.addEventListener('DOMContentLoaded', () => init3D());

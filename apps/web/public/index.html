@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AURA — 3D Avatar & Voice OS</title>
+  <title>AURA — Personal 3D Avatar (Photo-to-Avatar)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -22,29 +22,34 @@
       <div class="pulse-orb"></div>
       <div class="brand-text">
         <h1>AURA 3D</h1>
-        <span class="subtext">PERSONAL AVATAR & VOICE ENGINE · 2050</span>
+        <span class="subtext">PERSONAL AVATAR & VOICE ENGINE</span>
       </div>
     </div>
 
-    <!-- Voice Settings & Avatar Customizer -->
+    <!-- Actions: Create My Avatar & Voices -->
     <div class="header-actions">
+      <button id="openSelfieModalBtn" class="magic-pill-btn">📸 Make Avatar with My Photo (Selfie)</button>
+      <button id="avatarUploadBtn" class="pill-btn">📂 Upload .GLB File</button>
+      <input type="file" id="glbFileInput" accept=".glb,.gltf" style="display:none;">
+      
       <div class="voice-picker-wrap">
         <label for="voiceSelect">🗣️ Voice:</label>
         <select id="voiceSelect" class="styled-select"></select>
       </div>
-      <button id="avatarUploadBtn" class="pill-btn">👤 Load My 3D Avatar (.glb)</button>
-      <input type="file" id="glbFileInput" accept=".glb,.gltf" style="display:none;">
     </div>
   </header>
 
   <!-- Main Viewport -->
   <div class="avatar-stage-container">
-    <!-- 3D Canvas -->
     <div id="canvasContainer" class="canvas-3d-wrap">
       <div class="canvas-overlay">
         <div class="avatar-status-pill">
-          <span class="live-dot"></span> <span id="avatarStateText">IDLE · LISTENING</span>
+          <span class="live-dot"></span> <span id="avatarStateText">IDLE · WAITING FOR COMMAND</span>
         </div>
+      </div>
+      <div id="loadingSpinner" class="loading-overlay" style="display:none;">
+        <div class="spinner"></div>
+        <p>Loading your 3D Face & Avatar...</p>
       </div>
     </div>
 
@@ -63,14 +68,30 @@
       <!-- Dialogue & Voice Interaction Box -->
       <div class="speech-box">
         <div class="avatar-subtitles" id="subtitlesBox">
-          "Namaste Banti! Main AURA hoon. Main aapki aawaz aur aapke 3D avatar ke roop me bolne aur activities karne ke liye taiyaar hoon."
+          "Banti! 'Make Avatar with My Photo' button dabao, apni photo upload karo ya selfie lo, aur main bilkul tumhari tarah dikhne lagunga!"
         </div>
 
         <div class="speech-input-row">
-          <input type="text" id="speakInput" placeholder="AURA se kya bulwana chahte hain? Type karein aur Enter dabayein..." value="Namaste Banti! Main AURA hoon. Main ab aapke saath bolne aur activity karne ke liye bilkul taiyaar hoon.">
+          <input type="text" id="speakInput" placeholder="AURA se kya bulwana chahte hain? Type karein aur Enter dabayein..." value="Banti! 'Make Avatar with My Photo' button dabao aur main bilkul tumhari tarah ban jaunga.">
           <button id="speakBtn" class="primary-glow-btn">🔊 Speak Out Loud</button>
           <button id="micBtn" class="mic-btn" title="Speak through Microphone">🎙️</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ready Player Me Photo Avatar Modal -->
+  <div id="rpmModal" class="modal-backdrop" style="display:none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="title-row">
+          <span class="sparkle">✨</span>
+          <h3>Create Your Exact 3D Face Avatar</h3>
+        </div>
+        <button id="closeModalBtn" class="close-x">&times;</button>
+      </div>
+      <div class="modal-body">
+        <iframe id="rpmIframe" class="rpm-frame" allow="camera *; microphone *; clipboard-write"></iframe>
       </div>
     </div>
   </div>
