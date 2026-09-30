@@ -18,6 +18,43 @@ document.addEventListener('DOMContentLoaded', () => {
   let isSpeaking = false;
   let recognitionInstance = null;
 
+  // Track recent AURA speech to permanently kill speaker-to-mic echo loops
+  const recentSpeechCache = [];
+  function recordSpokenText(text) {
+    if (!text) return;
+    const clean = text.toLowerCase().trim();
+    recentSpeechCache.push(clean);
+    if (recentSpeechCache.length > 8) recentSpeechCache.shift();
+  }
+
+  function isAuraEcho(text) {
+    if (!text) return true;
+    const clean = text.toLowerCase().trim();
+    if (clean.length < 3) return true;
+
+    // Check against recent spoken speech
+    for (const phrase of recentSpeechCache) {
+      if (clean.includes(phrase) || phrase.includes(clean)) return true;
+    }
+
+    // Check against known system phrases
+    const echoList = [
+      'मैंने सुना',
+      'बंटी भाई',
+      'अलार्म सेट',
+      'खोल रहा हूँ',
+      'खोल दिया गया है',
+      'memories evaluated',
+      'processed your query',
+      'मेमोरीज',
+      'एवालुएटेड'
+    ];
+    for (const item of echoList) {
+      if (clean.includes(item)) return true;
+    }
+    return false;
+  }
+
   function speakAura(text) {
     if (!text) return;
     recordSpokenText(text);
@@ -218,41 +255,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const lower = text.toLowerCase();
 
-    // Track recent AURA speech to permanently kill speaker-to-mic echo loops
-  const recentSpeechCache = [];
-  function recordSpokenText(text) {
-    if (!text) return;
-    const clean = text.toLowerCase().trim();
-    recentSpeechCache.push(clean);
-    if (recentSpeechCache.length > 8) recentSpeechCache.shift();
-  }
-
-  function isAuraEcho(text) {
-    if (!text) return true;
-    const clean = text.toLowerCase().trim();
-    if (clean.length < 3) return true;
-
-    // Check against recent spoken speech
-    for (const phrase of recentSpeechCache) {
-      if (clean.includes(phrase) || phrase.includes(clean)) return true;
-    }
-
-    // Check against known system phrases
-    const echoList = [
-      'मैंने सुना',
-      'बंटी भाई',
-      'अलार्म सेट',
-      'खोल रहा हूँ',
-      'memories evaluated',
-      'processed your query',
-      'मेमोरीज',
-      'एवालुएटेड'
-    ];
-    for (const item of echoList) {
-      if (clean.includes(item)) return true;
-    }
-    return false;
-  }
+    // Instant echo check
+    if (isAuraEcho(text)) return;
 
   // 0. Instant Stop Voice Command (English + Devanagari Hindi)
   if (
@@ -347,6 +351,21 @@ document.addEventListener('DOMContentLoaded', () => {
         dialogueParagraph.textContent = data.response;
       }
 
+      // 0. Launch Native Desktop App (VS Code, Antigravity, Notepad, Calc, etc.)
+      if (data.action === 'launch_desktop_app') {
+        const toast = document.getElementById('auraAppLaunchToast');
+        if (toast) {
+          toast.innerHTML = `
+            <div class="toast-content">
+              <span class="toast-icon">⚡</span>
+              <span class="toast-msg">Opening <b>${data.appName || 'Desktop App'}</b> on PC...</span>
+            </div>
+          `;
+          toast.style.display = 'flex';
+          setTimeout(() => { toast.style.display = 'none'; }, 4000);
+        }
+      }
+
       // 1. Open URL action (YouTube, GitHub, Google)
       if (data.action === 'open_url' && data.url) {
         window.open(data.url, '_blank');
@@ -373,7 +392,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } catch (err) {
       console.error('[HANDLE COMMAND ERROR]', err);
-      speakAura(`बंटी भाई, मैंने सुना: "${text}"`);
+      speakAura("जी बंटी भाई, कनेक्शन में समस्या आई।");
     }
 
     if (voiceCommandInput) voiceCommandInput.value = '';

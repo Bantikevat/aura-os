@@ -1,3 +1,4 @@
+const { exec } = require('child_process');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -144,6 +145,16 @@ const server = http.createServer(async (req, res) => {
       userApproved: !!body.userApproved,
       confirmationToken: body.confirmationToken || null
     });
+
+    // Native Desktop Application Execution on Banti's Windows PC
+    if (result.intent === 'launch_desktop_app' && result.command) {
+      console.log('[EXECUTING DESKTOP COMMAND]:', result.command);
+      exec(result.command, (err) => {
+        if (err) console.error('[DESKTOP EXEC ERROR]:', err.message);
+        else console.log('[SUCCESS LAUNCHED APP]:', result.appName);
+      });
+    }
+
     return sendJSON(res, 200, result);
   }
 

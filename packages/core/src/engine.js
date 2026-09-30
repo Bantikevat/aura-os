@@ -282,6 +282,130 @@ class AuraEngine {
       };
     }
 
+    // 6.0. Real Native Windows Desktop App Launchers (VS Code, Antigravity, Notepad, Calc, Chrome, Paint, Terminal, Explorer)
+    if (
+      pLower.includes('vs code') || 
+      pLower.includes('vscode') || 
+      pLower.includes('वीएस कोड') || 
+      pLower.includes('वी एस कोड') ||
+      pLower.includes('कोड एडिटर')
+    ) {
+      return {
+        status: 'verified_complete',
+        intent: 'launch_desktop_app',
+        appName: 'VS Code',
+        command: 'code "C:\\Users\\hp\\Desktop\\prsnal\\aura-os"',
+        response: 'VS Code खोल दिया गया है बंटी भाई!',
+        action: 'launch_desktop_app'
+      };
+    }
+
+    if (
+      pLower.includes('antigravity') || 
+      pLower.includes('anti gravity') || 
+      pLower.includes('एंटीग्रैविटी') || 
+      pLower.includes('एंटी ग्रैविटी') || 
+      pLower.includes('एंटी ग्रेविटी') ||
+      pLower.includes('एंटीग्रेविटी')
+    ) {
+      return {
+        status: 'verified_complete',
+        intent: 'launch_desktop_app',
+        appName: 'Antigravity IDE',
+        command: 'start "" "C:\\Users\\hp\\AppData\\Local\\Programs\\Antigravity IDE\\Antigravity IDE.exe"',
+        response: 'Antigravity IDE खोल दिया गया है बंटी भाई!',
+        action: 'launch_desktop_app'
+      };
+    }
+
+    if (pLower.includes('notepad') || pLower.includes('नोटपैड')) {
+      return {
+        status: 'verified_complete',
+        intent: 'launch_desktop_app',
+        appName: 'Notepad',
+        command: 'start notepad.exe',
+        response: 'नोटपैड खोल दिया गया है।',
+        action: 'launch_desktop_app'
+      };
+    }
+
+    if (pLower.includes('calc') || pLower.includes('calculator') || pLower.includes('कैलकुलेटर') || pLower.includes('हिसाब')) {
+      return {
+        status: 'verified_complete',
+        intent: 'launch_desktop_app',
+        appName: 'Calculator',
+        command: 'start calc.exe',
+        response: 'कैलकुलेटर खोल दिया गया है।',
+        action: 'launch_desktop_app'
+      };
+    }
+
+    if (pLower.includes('chrome') || pLower.includes('क्रोम')) {
+      return {
+        status: 'verified_complete',
+        intent: 'launch_desktop_app',
+        appName: 'Google Chrome',
+        command: 'start chrome',
+        response: 'गूगल क्रोम खोल दिया गया है।',
+        action: 'launch_desktop_app'
+      };
+    }
+
+    if (pLower.includes('paint') || pLower.includes('पेंट')) {
+      return {
+        status: 'verified_complete',
+        intent: 'launch_desktop_app',
+        appName: 'Paint',
+        command: 'start mspaint',
+        response: 'पेंट खोल दिया गया है।',
+        action: 'launch_desktop_app'
+      };
+    }
+
+    if (pLower.includes('cmd') || pLower.includes('terminal') || pLower.includes('powershell') || pLower.includes('टर्मिनल') || pLower.includes('कमांड')) {
+      return {
+        status: 'verified_complete',
+        intent: 'launch_desktop_app',
+        appName: 'Terminal',
+        command: 'start cmd.exe',
+        response: 'कमांड टर्मिनल खोल दिया गया है।',
+        action: 'launch_desktop_app'
+      };
+    }
+
+    if (pLower.includes('task manager') || pLower.includes('टास्क मैनेजर')) {
+      return {
+        status: 'verified_complete',
+        intent: 'launch_desktop_app',
+        appName: 'Task Manager',
+        command: 'start taskmgr.exe',
+        response: 'टास्क मैनेजर खोल दिया गया है।',
+        action: 'launch_desktop_app'
+      };
+    }
+
+    if (pLower.includes('settings') || pLower.includes('सेटिंग्स') || pLower.includes('सेटिंग')) {
+      return {
+        status: 'verified_complete',
+        intent: 'launch_desktop_app',
+        appName: 'Windows Settings',
+        command: 'start ms-settings:',
+        response: 'विंडोज सेटिंग्स खोल दी गई हैं।',
+        action: 'launch_desktop_app'
+      };
+    }
+
+    if (pLower.includes('explorer') || pLower.includes('फाइल') || pLower.includes('फ़ाइल') || pLower.includes('files') || pLower.includes('my computer')) {
+      return {
+        status: 'verified_complete',
+        intent: 'launch_desktop_app',
+        appName: 'File Explorer',
+        command: 'explorer.exe "C:\\Users\\hp\\Desktop\\prsnal"',
+        response: 'फ़ाइल एक्सप्लोरर खोल दिया गया है।',
+        action: 'launch_desktop_app'
+      };
+    }
+
     // 6.2. Real Web App Launchers (English + Devanagari Hindi)
     if (
       pLower.includes('youtube') || 
@@ -453,22 +577,81 @@ class AuraEngine {
       };
     }
 
-    // 8.1. Friendly conversation in Hindi
-    if (pLower.includes('kaise ho') || pLower.includes('kaisa hai') || pLower.includes('how are you')) {
+    // 8.1. Friendly, intelligent, warm conversation with Banti
+    if (
+      pLower.includes('tum kon ho') || 
+      pLower.includes('tum kaun ho') || 
+      pLower.includes('who are you') || 
+      pLower.includes('तुम कौन हो') || 
+      pLower.includes('तुम्हारा नाम क्या है') ||
+      pLower.includes('apna parichay')
+    ) {
       return {
         status: 'verified_complete',
         intent: 'conversation',
-        response: 'नमस्ते बंटी भाई! मैं बिल्कुल बढ़िया हूँ। आज हम क्या काम शुरू करें?'
+        response: 'मैं AURA हूँ, आपकी पर्सनल AI लाइफ OS। मैं आपके वॉइस कमांड्स से VS Code, Antigravity खोल सकता हूँ, और रियल टास्क पूरे कर सकता हूँ!'
       };
     }
-    if (pLower.includes('namaste') || pLower.includes('नमस्ते') || pLower.includes('hello') || pLower.includes('hey') || pLower.includes('hi')) {
+
+    if (
+      pLower.includes('kya kar sakte ho') || 
+      pLower.includes('what can you do') || 
+      pLower.includes('क्या कर सकते हो') || 
+      pLower.includes('क्या कर सकता है')
+    ) {
       return {
         status: 'verified_complete',
         intent: 'conversation',
-        response: 'नमस्ते बंटी भाई! बोलिए, AURA आपके साथ तैयार है।'
+        response: 'बंटी भाई, मैं आपके लिए VS Code, Antigravity, यूट्यूब खोल सकता हूँ, अलार्म लगा सकता हूँ और कोडिंग टास्क कर सकता हूँ।'
       };
     }
-    if (pLower.includes('shukriya') || pLower.includes('dhanyawad') || pLower.includes('thank you') || pLower.includes('thanks')) {
+
+    if (
+      pLower.includes('good morning') || 
+      pLower.includes('गुड मॉर्निंग') || 
+      pLower.includes('सुप्रभात')
+    ) {
+      return {
+        status: 'verified_complete',
+        intent: 'conversation',
+        response: 'सुप्रभात बंटी भाई! आपका दिन बहुत शानदार और प्रोडक्टिव रहे। बताइए आज क्या शुरू करना है?'
+      };
+    }
+
+    if (
+      pLower.includes('kaise ho') || 
+      pLower.includes('kaisa hai') || 
+      pLower.includes('how are you') ||
+      pLower.includes('कैसे हो') ||
+      pLower.includes('कैसा है') ||
+      pLower.includes('kya haal hai') ||
+      pLower.includes('क्या हाल')
+    ) {
+      return {
+        status: 'verified_complete',
+        intent: 'conversation',
+        response: 'नमस्ते बंटी भाई! मैं बिल्कुल मस्त और फुल एनर्जी में हूँ। आप बताइए, आज कोडिंग में क्या नया शुरू करना है?'
+      };
+    }
+
+    if (
+      pLower.includes('namaste') || 
+      pLower.includes('नमस्ते') || 
+      pLower.includes('hello') || 
+      pLower.includes('hey') || 
+      pLower.includes('hi') ||
+      pLower.includes('हेलो') ||
+      pLower.includes('हाय') ||
+      pLower.includes('सुनो')
+    ) {
+      return {
+        status: 'verified_complete',
+        intent: 'conversation',
+        response: 'नमस्ते बंटी भाई! AURA पूरी तरह आपकी सेवा में हाज़िर है। बताइए, कौन सा सॉफ़्टवेयर खोलें या किस टास्क पर काम करें?'
+      };
+    }
+
+    if (pLower.includes('shukriya') || pLower.includes('dhanyawad') || pLower.includes('thank you') || pLower.includes('thanks') || pLower.includes('धन्यवाद') || pLower.includes('शुक्रिया')) {
       return {
         status: 'verified_complete',
         intent: 'conversation',
@@ -490,7 +673,7 @@ class AuraEngine {
     return {
       status: 'verified_complete',
       intent: 'conversation',
-      response: `हाँ बंटी भाई, मैंने सुना: "${prompt}"। आप मुझे यूट्यूब खोलने, समय पूछने, अलार्म लगाने या कोई नया टास्क बनाने को कह सकते हैं!`
+      response: 'जी बंटी भाई! आप मुझे VS Code या Antigravity खोलने, यूट्यूब चलाने या अलार्म सेट करने को कह सकते हैं।'
     };
   }
 
