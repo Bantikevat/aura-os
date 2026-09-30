@@ -8,57 +8,13 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="src/features/header/aura-header.css">
 </head>
 <body>
   <div class="app-root">
 
-    <!-- TOP HEADER -->
-    <header class="top-nav-bar">
-      <div class="brand-zone">
-        <div class="aura-logo-badge">
-          <svg viewBox="0 0 36 36" fill="none">
-            <path d="M18 3L3 31H11L18 16L25 31H33L18 3Z" fill="url(#logoG)"/>
-            <path d="M12 24H24L18 13L12 24Z" fill="#070c18"/>
-            <defs>
-              <linearGradient id="logoG" x1="3" y1="3" x2="33" y2="31" gradientUnits="userSpaceOnUse">
-                <stop stop-color="#38bdf8"/>
-                <stop offset="0.5" stop-color="#818cf8"/>
-                <stop offset="1" stop-color="#c084fc"/>
-              </linearGradient>
-            </defs>
-          </svg>
-        </div>
-        <div class="brand-name">
-          <h1>AURA</h1>
-          <span>Personal AI Life OS</span>
-        </div>
-      </div>
-
-      <div class="header-center-search">
-        <span class="search-ico">🔍</span>
-        <input type="text" id="topSearchInput" placeholder="Ask AURA anything...">
-        <button class="top-mic-btn" id="topMicBtn">🎙️</button>
-      </div>
-
-      <div class="header-right-meta">
-        <div class="live-clock-pill">
-          <span class="c-date" id="topLiveDate">Tue, 30 Sep 2026</span>
-          <span class="c-time" id="topLiveTime">07:24 AM</span>
-        </div>
-        <button class="icon-round-btn notif" title="Notifications">🔔<span class="red-badge">3</span></button>
-        <button class="icon-round-btn theme" id="themeBtn" title="Theme">☀️</button>
-        <button class="icon-round-btn sound" id="soundToggleBtn" title="Audio">🔊</button>
-        
-        <div class="user-chip-header">
-          <img src="aura-hero-v3.jpg" alt="Banti" class="user-thumb">
-          <div class="user-chip-text">
-            <span class="name">Banti</span>
-            <span class="online-tag"><span class="dot-g"></span> Online</span>
-          </div>
-          <button class="gear-btn">⚙️</button>
-        </div>
-      </div>
-    </header>
+    <!-- TOP LUXURY COMMAND CENTER HEADER -->
+    <header id="auraHeaderContainer" class="aura-luxury-header"></header>
 
     <!-- 3-COLUMN LAYOUT -->
     <div class="main-workspace">

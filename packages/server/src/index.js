@@ -40,6 +40,8 @@ const MIME_TYPES = {
   '.js': 'text/javascript',
   '.json': 'application/json',
   '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
   '.svg': 'image/svg+xml'
 };
 
@@ -64,8 +66,31 @@ const server = http.createServer(async (req, res) => {
       status: 'ONLINE',
       trustLevel: 'NIST_ENFORCED',
       activeGoalsCount: aura.goals.getActiveGoals().length,
-      memoriesCount: aura.memory.getAll().length
+      memoriesCount: aura.memory.getAll().length,
+      uptimeSeconds: Math.floor(process.uptime()),
+      timestamp: new Date().toISOString()
     });
+  }
+
+  if (url.pathname === '/api/system/time' && req.method === 'GET') {
+    return sendJSON(res, 200, {
+      iso: new Date().toISOString(),
+      localeTime: new Date().toLocaleTimeString(),
+      localeDate: new Date().toLocaleDateString(),
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+    });
+  }
+
+  if (url.pathname === '/api/notifications' && req.method === 'GET') {
+    return sendJSON(res, 200, { notifications: aura.getNotifications() });
+  }
+
+  if (url.pathname === '/api/notifications/read' && req.method === 'POST') {
+    return sendJSON(res, 200, aura.markNotificationsRead());
+  }
+
+  if (url.pathname === '/api/notifications/clear' && req.method === 'POST') {
+    return sendJSON(res, 200, aura.clearNotifications());
   }
 
   if (url.pathname === '/api/memories' && req.method === 'GET') {
@@ -109,21 +134,15 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (url.pathname === '/api/audits' && req.method === 'GET') {
-    const auditFile = aura.trust.auditPath;
-    let audits = [];
-    try {
-      if (fs.existsSync(auditFile)) {
-        audits = JSON.parse(fs.readFileSync(auditFile, 'utf8'));
-      }
-    } catch {}
-    return sendJSON(res, 200, { audits });
+    return sendJSON(res, 200, { audits: aura.getAudits() });
   }
 
   if (url.pathname === '/api/execute' && req.method === 'POST') {
     const body = await parseBody(req);
     const result = await aura.executeIntent({
-      userPrompt: body.prompt || '',
-      userApproved: !!body.userApproved
+      userPrompt: body.prompt || body.query || '',
+      userApproved: !!body.userApproved,
+      confirmationToken: body.confirmationToken || null
     });
     return sendJSON(res, 200, result);
   }

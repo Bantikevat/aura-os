@@ -1,8 +1,8 @@
-import { initHeaderFeatures } from './src/features/header/header.js';
+import { mountAuraHeader } from './src/features/header/AuraHeader.js';
 // AURA Life OS V3 — Real Webcam, Screen Mirror & Hindi Voice Engine
 document.addEventListener('DOMContentLoaded', () => {
   console.log('[AURA V3] Initializing All Real Working Features...');
-  initHeaderFeatures(speakAura);
+  // mountAuraHeader initialized below after router and media handlers
 
   const synth = window.speechSynthesis;
   let hindiVoice = null;
@@ -342,5 +342,15 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  console.log('[AURA V3] Real Working System Online with 16 Pages.');
+  
+  // Mount the Luxury Command Center Header
+  mountAuraHeader({
+    targetElement: document.getElementById('auraHeaderContainer'),
+    onNavigate: (pageKey, pageTitle) => openPage(pageKey, pageTitle),
+    speakFn: (text) => speakAura(text),
+    onToggleCamera: () => toggleWebcam(),
+    onToggleScreen: () => toggleScreen()
+  });
+
+  console.log('[AURA V3] Real Working System Online with 16 Pages and Luxury Header.');
 });
