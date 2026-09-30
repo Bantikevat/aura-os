@@ -3,140 +3,78 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AURA — Personal AI Life OS Command Center</title>
+  <title>AURA — 3D Avatar & Voice OS</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <!-- Three.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 </head>
 <body>
   <div class="aurora-bg"></div>
 
-  <!-- Top Command Bar -->
+  <!-- Header -->
   <header class="command-bar">
     <div class="brand">
       <div class="pulse-orb"></div>
       <div class="brand-text">
-        <h1>AURA</h1>
-        <span class="subtext">PERSONAL AI LIFE OS · 2050 HORIZON</span>
+        <h1>AURA 3D</h1>
+        <span class="subtext">PERSONAL AVATAR & VOICE ENGINE · 2050</span>
       </div>
     </div>
 
-    <!-- Active Persona Switcher -->
-    <div class="role-selector-pill">
-      <span class="role-label">ACTIVE ROLE:</span>
-      <select id="roleSelect" class="role-dropdown">
-        <option value="care">Care (Health & Mind)</option>
-        <option value="friend">Friend (Continuity)</option>
-        <option value="teacher">Teacher (Adaptive Learning)</option>
-        <option value="coach">Coach (Habits & Goals)</option>
-        <option value="researcher">Researcher (Evidence-Driven)</option>
-        <option value="engineer" selected>Engineer (Architecture & Code)</option>
-        <option value="planner">Planner (Priorities & Time)</option>
-      </select>
-    </div>
-
-    <div class="system-status-pills">
-      <div class="status-badge online">
-        <span class="dot"></span> CORE ENGINE: ONLINE
+    <!-- Voice Settings & Avatar Customizer -->
+    <div class="header-actions">
+      <div class="voice-picker-wrap">
+        <label for="voiceSelect">🗣️ Voice:</label>
+        <select id="voiceSelect" class="styled-select"></select>
       </div>
-      <div class="status-badge trust">
-        <span class="shield">🛡️</span> NIST TRUST: ENFORCED
-      </div>
+      <button id="avatarUploadBtn" class="pill-btn">👤 Load My 3D Avatar (.glb)</button>
+      <input type="file" id="glbFileInput" accept=".glb,.gltf" style="display:none;">
     </div>
   </header>
 
-  <!-- Main Grid Dashboard -->
-  <main class="dashboard-grid">
-    <!-- Left Column: Personal World Model & Goals -->
-    <section class="panel world-model-panel">
-      <div class="panel-header">
-        <div class="title-wrap">
-          <span class="icon">🧠</span>
-          <h2>Personal World Model</h2>
-        </div>
-        <span class="badge" id="memCountBadge">0 Memories</span>
-      </div>
-
-      <!-- Filter tabs -->
-      <div class="tab-chips">
-        <button class="chip active" data-cat="all">All</button>
-        <button class="chip" data-cat="fact">Facts</button>
-        <button class="chip" data-cat="preference">Preferences</button>
-        <button class="chip" data-cat="goal">Goals</button>
-        <button class="chip" data-cat="episode">Episodes</button>
-      </div>
-
-      <div class="memory-list" id="memoryList">
-        <!-- Rendered by JS -->
-      </div>
-
-      <!-- Quick Add Memory -->
-      <form id="addMemoryForm" class="quick-form">
-        <input type="text" id="memInput" placeholder="Store new personal fact or preference..." required>
-        <select id="memCategory">
-          <option value="fact">Fact</option>
-          <option value="preference">Preference</option>
-          <option value="decision">Decision</option>
-        </select>
-        <button type="submit" class="glow-btn">Store</button>
-      </form>
-    </section>
-
-    <!-- Center Column: Hands Execution Console -->
-    <section class="panel console-panel">
-      <div class="panel-header">
-        <div class="title-wrap">
-          <span class="icon">⚡</span>
-          <h2>Execution & Verification Console</h2>
-        </div>
-        <span class="subtext">Deterministic Tool Loop</span>
-      </div>
-
-      <div class="terminal-view" id="terminalView">
-        <div class="log-line sys">[SYSTEM INITIALIZED] AURA Life OS Core v1.0.0 ready.</div>
-        <div class="log-line sys">[NIST TRUST ENGINE] Read-only allowed. Mutating requires human-in-the-loop approval.</div>
-        <div class="log-line prompt-hint">Try typing: "Inspect system health" or "Check my goals"</div>
-      </div>
-
-      <div class="prompt-box-wrap">
-        <input type="text" id="commandInput" placeholder="Ask AURA or issue a command (e.g., 'Inspect system status')..." autocomplete="off">
-        <button id="sendBtn" class="primary-btn">Execute Intent</button>
-      </div>
-    </section>
-
-    <!-- Right Column: Goals & Trust Audit -->
-    <section class="panel side-panel">
-      <!-- Active Goals Card -->
-      <div class="card goals-card">
-        <div class="panel-header">
-          <div class="title-wrap">
-            <span class="icon">🎯</span>
-            <h2>Active Goals</h2>
-          </div>
-          <span class="badge" id="goalCountBadge">0 Goals</span>
-        </div>
-        <div class="goals-list" id="goalsList">
-          <!-- Rendered by JS -->
+  <!-- Main Viewport -->
+  <div class="avatar-stage-container">
+    <!-- 3D Canvas -->
+    <div id="canvasContainer" class="canvas-3d-wrap">
+      <div class="canvas-overlay">
+        <div class="avatar-status-pill">
+          <span class="live-dot"></span> <span id="avatarStateText">IDLE · LISTENING</span>
         </div>
       </div>
+    </div>
 
-      <!-- Trust & Audit Logs Card -->
-      <div class="card audit-card">
-        <div class="panel-header">
-          <div class="title-wrap">
-            <span class="icon">🛡️</span>
-            <h2>Audit & Verification Trail</h2>
-          </div>
-          <span class="subtext">Non-Repudiation Log</span>
+    <!-- Interactive Speech & Action Controls -->
+    <div class="speech-control-panel">
+      <!-- Activity Gestures -->
+      <div class="activity-bar">
+        <span class="bar-title">ACTIVITIES:</span>
+        <button class="act-btn active" data-action="idle">🧍 Idle</button>
+        <button class="act-btn" data-action="talk">🗣️ Speak</button>
+        <button class="act-btn" data-action="nod">👍 Agree</button>
+        <button class="act-btn" data-action="think">🤔 Think</button>
+        <button class="act-btn" data-action="wave">👋 Wave</button>
+      </div>
+
+      <!-- Dialogue & Voice Interaction Box -->
+      <div class="speech-box">
+        <div class="avatar-subtitles" id="subtitlesBox">
+          "Namaste Banti! Main AURA hoon. Main aapki aawaz aur aapke 3D avatar ke roop me bolne aur activities karne ke liye taiyaar hoon."
         </div>
-        <div class="audit-list" id="auditList">
-          <!-- Rendered by JS -->
+
+        <div class="speech-input-row">
+          <input type="text" id="speakInput" placeholder="AURA se kya bulwana chahte hain? Type karein aur Enter dabayein..." value="Namaste Banti! Main AURA hoon. Main ab aapke saath bolne aur activity karne ke liye bilkul taiyaar hoon.">
+          <button id="speakBtn" class="primary-glow-btn">🔊 Speak Out Loud</button>
+          <button id="micBtn" class="mic-btn" title="Speak through Microphone">🎙️</button>
         </div>
       </div>
-    </section>
-  </main>
+    </div>
+  </div>
 
-  <script src="app.js"></script>
+  <script src="avatar.js"></script>
 </body>
 </html>
