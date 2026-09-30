@@ -15,10 +15,18 @@ document.addEventListener('DOMContentLoaded', () => {
   initSpeech();
   if (synth.onvoiceschanged !== undefined) synth.onvoiceschanged = initSpeech;
 
+  let isSpeaking = false;
+  let recognitionInstance = null;
+
   function speakAura(text) {
     if (!text) return;
-    auraVoiceEngine.speak(text);
-    return;
+    synth.cancel();
+
+    // Mute microphone while AURA is speaking to prevent speaker-to-mic echo feedback
+    isSpeaking = true;
+    if (recognitionInstance) {
+      try { recognitionInstance.abort(); } catch {}
+    }
 
     const utter = new SpeechSynthesisUtterance(text);
     if (hindiVoice) utter.voice = hindiVoice;
@@ -31,6 +39,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     utter.onend = () => {
       if (wave) wave.style.opacity = '0.7';
+      // 500ms cool-down buffer after speaker stops before re-arming the microphone
+      setTimeout(() => {
+        isSpeaking = false;
+        if (isAlwaysOn && recognitionInstance) {
+          try { recognitionInstance.start(); } catch {}
+        }
+      }, 500);
+    };
+
+    utter.onerror = () => {
+      setTimeout(() => {
+        isSpeaking = false;
+        if (isAlwaysOn && recognitionInstance) {
+          try { recognitionInstance.start(); } catch {}
+        }
+      }, 300);
     };
 
     synth.speak(utter);
@@ -193,7 +217,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       // 4. Voice response
-      if (data.response) {
+      if (data.response && data.status !== 'ignored') {
         speakAura(data.response);
       }
     } catch (err) {
@@ -210,8 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Continuous Always-On Voice Recognition Engine
-  let isAlwaysOn = true; // Enabled by default as requested!
-  let recognitionInstance = null;
+  let isAlwaysOn = true;
 
   if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
     const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -232,6 +255,11 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     recognition.onresult = (e) => {
+      if (isSpeaking) {
+        console.log('[MIC ECHO IGNORED - AURA WAS SPEAKING]');
+        return;
+      }
+
       const lastIdx = e.results.length - 1;
       const transcript = e.results[lastIdx][0].transcript.trim();
       if (!transcript) return;

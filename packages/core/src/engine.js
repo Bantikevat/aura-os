@@ -365,13 +365,59 @@ class AuraEngine {
       };
     }
 
-    // 8. General conversational query using memory context
+    // 8. Filter out audio self-echoes or meaningless fragments
+    if (
+      pLower.includes('processed your query') || 
+      pLower.includes('memories evaluated') || 
+      pLower.includes('मेमोरीज') || 
+      pLower.includes('एवालुएटेड') ||
+      prompt.length < 3
+    ) {
+      return {
+        status: 'ignored',
+        intent: 'noise_filtered',
+        response: null
+      };
+    }
+
+    // 8.1. Friendly conversation in Hindi
+    if (pLower.includes('kaise ho') || pLower.includes('kaisa hai') || pLower.includes('how are you')) {
+      return {
+        status: 'verified_complete',
+        intent: 'conversation',
+        response: 'नमस्ते बंटी भाई! मैं बिल्कुल बढ़िया हूँ। आज हम क्या काम शुरू करें?'
+      };
+    }
+    if (pLower.includes('namaste') || pLower.includes('नमस्ते') || pLower.includes('hello') || pLower.includes('hey') || pLower.includes('hi')) {
+      return {
+        status: 'verified_complete',
+        intent: 'conversation',
+        response: 'नमस्ते बंटी भाई! बोलिए, AURA आपके साथ तैयार है।'
+      };
+    }
+    if (pLower.includes('shukriya') || pLower.includes('dhanyawad') || pLower.includes('thank you') || pLower.includes('thanks')) {
+      return {
+        status: 'verified_complete',
+        intent: 'conversation',
+        response: 'अरे बंटी भाई, आपका बहुत-बहुत स्वागत है! मैं हमेशा आपकी सेवा में हाज़िर हूँ।'
+      };
+    }
+
+    // 8.2. Contextual memory search or natural response
     const relevantMemories = this.memory.search(prompt);
+    if (relevantMemories.length > 0) {
+      return {
+        status: 'verified_complete',
+        intent: 'conversation',
+        response: `बंटी भाई, मुझे आपकी यादों में मिला: "${relevantMemories[0].content}"। क्या इसपर आगे काम करें?`,
+        memories: relevantMemories
+      };
+    }
+
     return {
       status: 'verified_complete',
       intent: 'conversation',
-      response: `Banti, I processed your query: "${prompt}". (${relevantMemories.length} memories evaluated).`,
-      memories: relevantMemories
+      response: `हाँ बंटी भाई, मैंने सुना: "${prompt}"। आप मुझे यूट्यूब खोलने, समय पूछने, अलार्म लगाने या कोई नया टास्क बनाने को कह सकते हैं!`
     };
   }
 
