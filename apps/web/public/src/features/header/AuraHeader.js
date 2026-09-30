@@ -1,3 +1,4 @@
+import { auraVoiceEngine } from '../voice/voiceEngine.js';
 /**
  * AURA Master Command Center Header Controller
  * Production-quality, non-destructive, robust event binding
@@ -244,50 +245,35 @@ export function mountAuraHeader({ onNavigate, speakFn, onToggleCamera, onToggleS
     });
   }
 
-  // 6. Voice Input (Speech Recognition)
+  // 6. Voice Input (Connected to Unified Voice Engine)
   const micBtn = document.getElementById('topMicBtn');
-  if (micBtn && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
-    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognition = new SpeechRec();
-    recognition.lang = 'hi-IN';
-    recognition.continuous = false;
-    recognition.interimResults = false;
-
-    let isListening = false;
-
-    recognition.onstart = () => {
-      isListening = true;
-      micBtn.classList.add('listening');
-      setState('Listening...', true);
-      if (speakFn) speakFn('सुन रहा हूँ बंटी भाई, बोलिए...');
-    };
-
-    recognition.onresult = (e) => {
-      const transcript = e.results[0][0].transcript;
-      if (searchInput) searchInput.value = transcript;
-      setState('Processing...', true);
-      handleExecute(transcript);
-    };
-
-    recognition.onerror = (e) => {
-      console.warn('[VOICE ERROR]', e.error);
-      micBtn.classList.remove('listening');
-      setState('Mic Error', true);
-      setTimeout(() => setState('', false), 2500);
-      isListening = false;
-    };
-
-    recognition.onend = () => {
-      isListening = false;
-      micBtn.classList.remove('listening');
-    };
+  if (micBtn) {
+    auraVoiceEngine.subscribe((event, data) => {
+      if (event === 'start') {
+        micBtn.classList.add('listening');
+        setState('Always Listening...', true);
+      } else if (event === 'end') {
+        if (!auraVoiceEngine.isAlwaysOn) {
+          micBtn.classList.remove('listening');
+          setState('', false);
+        }
+      } else if (event === 'transcript') {
+        if (searchInput) searchInput.value = data;
+        setState('Thinking...', true);
+      }
+    });
 
     micBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      if (!isListening) {
-        try { recognition.start(); } catch {}
+      auraVoiceEngine.requestMicPermission();
+      const active = auraVoiceEngine.toggleAlwaysOn();
+      if (active) {
+        micBtn.classList.add('listening');
+        setState('Always Listening...', true);
       } else {
-        recognition.stop();
+        micBtn.classList.remove('listening');
+        setState('Mic Muted', true);
+        setTimeout(() => setState('', false), 2000);
       }
     });
   }

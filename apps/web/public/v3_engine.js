@@ -1,3 +1,4 @@
+import { auraVoiceEngine } from './src/features/voice/voiceEngine.js';
 import { mountAuraHeader } from './src/features/header/AuraHeader.js';
 // AURA Life OS V3 — Real Webcam, Screen Mirror & Hindi Voice Engine
 document.addEventListener('DOMContentLoaded', () => {
@@ -16,7 +17,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function speakAura(text) {
     if (!text) return;
-    synth.cancel();
+    auraVoiceEngine.speak(text);
+    return;
 
     const utter = new SpeechSynthesisUtterance(text);
     if (hindiVoice) utter.voice = hindiVoice;
@@ -518,6 +520,41 @@ document.addEventListener('DOMContentLoaded', () => {
     onToggleCamera: () => toggleWebcam(),
     onToggleScreen: () => toggleScreen()
   });
+
+  
+  // Connect Unified Voice Engine
+  auraVoiceEngine.setCommandHandler(text => handleCommand(text));
+
+  auraVoiceEngine.subscribe((event, data) => {
+    if (event === 'start') {
+      if (glowMicTrigger) {
+        glowMicTrigger.style.background = '#10b981';
+        glowMicTrigger.style.boxShadow = '0 0 20px #10b981';
+      }
+      const stListening = document.getElementById('stListening');
+      if (stListening) stListening.style.color = '#38bdf8';
+    } else if (event === 'end') {
+      if (!auraVoiceEngine.isAlwaysOn && glowMicTrigger) {
+        glowMicTrigger.style.background = '';
+        glowMicTrigger.style.boxShadow = '';
+      }
+    } else if (event === 'transcript') {
+      if (dialogueParagraph) dialogueParagraph.textContent = 'सुन रहा हूँ: "' + data + '"';
+      if (voiceCommandInput) voiceCommandInput.value = data;
+    }
+  });
+
+  if (glowMicTrigger) {
+    glowMicTrigger.addEventListener('click', () => {
+      auraVoiceEngine.requestMicPermission();
+      auraVoiceEngine.toggleAlwaysOn();
+    });
+  }
+
+  // Request mic permission on first interaction
+  document.addEventListener('click', () => {
+    auraVoiceEngine.requestMicPermission();
+  }, { once: true });
 
   console.log('[AURA V3] Real Working System Online with 16 Pages and Luxury Header.');
 });
