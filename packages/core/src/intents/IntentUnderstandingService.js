@@ -39,6 +39,7 @@ class IntentUnderstandingService {
         intent: fastPathResult.intent,
         target: fastPathResult.target,
         app: fastPathResult.app,
+        parameters: fastPathResult.parameters || {},
         confidence: 1.0,
         normalizedText: fastPathResult.normalizedText,
         originalPrompt: cleanPrompt

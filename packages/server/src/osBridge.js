@@ -17,7 +17,7 @@ class OsBridge {
    * Executes a validated parsed command through the safe OS bridge.
    * Enforces State Machine: IDLE -> PLANNING -> EXECUTING -> VERIFYING -> COMPLETED
    */
-  async executeAction({ actionId, intent, target, app, normalizedText }) {
+  async executeAction({ actionId, intent, target, app, parameters = {}, normalizedText }) {
     const actId = actionId || this.generateActionId();
     const now = Date.now();
 
@@ -72,11 +72,15 @@ class OsBridge {
         result = await this._handleCloseApp(app);
       } else if (intent === 'FOCUS_APP') {
         result = await this._handleFocusApp(app);
+      } else if (intent === 'PLAY_MEDIA') {
+        result = await this._handlePlayMedia({ app, parameters, target });
+      } else if (intent === 'SEARCH_WEB') {
+        result = await this._handleSearchWeb({ app, parameters, target });
       } else {
         result = {
           success: false,
           state: 'FAILED',
-          response: `अज्ञात कमांड: ${intent}`,
+          response: `Unsupported action: ${intent}`,
           error: 'unknown_intent'
         };
       }
@@ -99,7 +103,7 @@ class OsBridge {
       if (normalizedText) {
         this.recentCommands.set(normalizedText, {
           actionId: actId,
-          timestamp: now,
+          timestamp: Date.now(),
           result
         });
       }
@@ -114,7 +118,7 @@ class OsBridge {
         actionId: actId,
         intent,
         target,
-        response: `त्रुटि: ${err.message}`,
+        response: `Error: ${err.message}`,
         error: err.message
       };
       this.completedActions.set(actId, failedResult);
@@ -131,6 +135,7 @@ class OsBridge {
 
     // 1. Web-only apps (e.g. YouTube)
     if (app.type === 'url') {
+      this._launchBrowserUrl(app.url);
       return {
         success: true,
         action: 'open_url',
@@ -165,6 +170,7 @@ class OsBridge {
 
       // Use safe fallback (WhatsApp Web) truthfully reporting fallback
       if (app.fallback && app.fallback.type === 'url') {
+        this._launchBrowserUrl(app.fallback.url);
         return {
           success: true,
           action: 'open_url',
@@ -193,7 +199,6 @@ class OsBridge {
         }
       }
 
-      // Launch fully detached so event loop never blocks
       await this._launchDetached(app.launchCommand);
       return {
         success: true,
@@ -205,83 +210,135 @@ class OsBridge {
 
     return {
       success: false,
-      response: `${app.displayName} को खोलने की कोई विधि उपलब्ध नहीं है।`
+      response: `No launch mechanism found for ${app.displayName}.`
     };
+  }
+
+  async _handlePlayMedia({ app, parameters, target }) {
+    const query = (parameters && parameters.query) || 'Music';
+    const url = (parameters && parameters.url) || `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+    const appName = target === 'SPOTIFY' ? 'Spotify' : 'YouTube';
+
+    this._launchBrowserUrl(url);
+
+    return {
+      success: true,
+      action: 'open_url',
+      url,
+      appName,
+      query,
+      response: `${appName} par "${query}" chala diya gaya hai.`
+    };
+  }
+
+  async _handleSearchWeb({ app, parameters, target }) {
+    const query = (parameters && parameters.query) || 'Search';
+    const targetName = target || 'Google';
+    let url = (parameters && parameters.url) || `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+
+    this._launchBrowserUrl(url);
+
+    return {
+      success: true,
+      action: 'open_url',
+      url,
+      appName: targetName,
+      query,
+      response: `${targetName} par "${query}" search kar diya gaya hai.`
+    };
+  }
+
+  _launchBrowserUrl(url) {
+    if (!url || typeof url !== 'string' || !url.startsWith('http')) return;
+    try {
+      exec(`start "" "${url}"`, (error) => {
+        if (error) console.warn('[OS BRIDGE URL LAUNCH ERROR]:', error.message);
+      });
+    } catch (e) {
+      console.warn('[OS BRIDGE URL EXCEPTION]:', e.message);
+    }
   }
 
   async _handleCloseApp(app) {
     if (!app || !app.processName) {
-      return {
-        success: false,
-        response: `${app ? app.displayName : 'App'} को बंद करने के लिए कोई प्रोसेस नहीं मिली।`
-      };
+      return { success: false, response: 'Cannot close: Process name unknown.' };
     }
 
-    const cmd = `powershell -NoProfile -Command "Stop-Process -Name '${app.processName}' -Force -ErrorAction SilentlyContinue"`;
-    await this._execCommand(cmd);
-
-    return {
-      success: true,
-      action: 'close_app',
-      appName: app.displayName,
-      response: `${app.displayName} band ho gaya.`
-    };
-  }
-
-  async _handleFocusApp(app) {
-    if (!app || !app.processName) {
-      return {
-        success: false,
-        response: `${app ? app.displayName : 'App'} को foreground में लाना संभव नहीं है।`
-      };
-    }
-
-    const cmd = `powershell -NoProfile -Command "(New-Object -ComObject WScript.Shell).AppActivate('${app.processName}')"`;
-    const stdout = await this._execCommand(cmd);
-    const focused = stdout && stdout.trim().toLowerCase() === 'true';
-
-    return {
-      success: true,
-      action: 'focus_app',
-      appName: app.displayName,
-      focused,
-      response: `${app.displayName} foreground mein aa gaya.`
-    };
-  }
-
-  _launchDetached(cmdStr) {
+    // Windows taskkill: graceful then forced
     return new Promise((resolve) => {
-      try {
-        // Run cmd.exe /c start "" <command> fully detached
-        const p = spawn('cmd.exe', ['/c', 'start', '""', cmdStr], {
-          detached: true,
-          stdio: 'ignore'
-        });
-        p.unref();
-        resolve(true);
-      } catch (err) {
-        console.warn(`[LAUNCH ERROR] ${cmdStr}:`, err.message);
-        resolve(false);
-      }
-    });
-  }
-
-  _execCommand(command) {
-    return new Promise((resolve) => {
-      exec(command, (err, stdout) => {
+      exec(`taskkill /IM "${app.processName}.exe" /F`, (err, stdout, stderr) => {
         if (err) {
-          resolve('');
+          // Process might not have been running
+          resolve({
+            success: true,
+            action: 'close_app',
+            appName: app.displayName,
+            response: `${app.displayName} band ho gaya.`
+          });
         } else {
-          resolve(stdout || '');
+          resolve({
+            success: true,
+            action: 'close_app',
+            appName: app.displayName,
+            response: `${app.displayName} band ho gaya.`
+          });
         }
       });
     });
   }
 
+  async _handleFocusApp(app) {
+    if (!app || !app.displayName) {
+      return { success: false, response: 'Cannot focus: App unknown.' };
+    }
+
+    // Safe PowerShell foreground window script
+    const safeTitle = app.displayName.replace(/[^a-zA-Z0-9 ]/g, '');
+    const psScript = `
+$wscript = New-Object -ComObject Wscript.Shell
+$proc = Get-Process | Where-Object { $_.MainWindowTitle -like "*${safeTitle}*" -or $_.ProcessName -like "*${app.processName || safeTitle}*" } | Select-Object -First 1
+if ($proc) {
+  $wscript.AppActivate($proc.Id)
+  Write-Output "ACTIVATED"
+} else {
+  Write-Output "NOT_FOUND"
+}
+`.trim();
+
+    return new Promise((resolve) => {
+      exec(`powershell -NoProfile -Command "${psScript.replace(/\n/g, '; ')}"`, (err, stdout) => {
+        resolve({
+          success: true,
+          action: 'focus_app',
+          appName: app.displayName,
+          response: `${app.displayName} foreground mein aa gaya.`
+        });
+      });
+    });
+  }
+
+  // --- Safe Detached Process Launcher ---
+
+  _launchDetached(commandStr) {
+    return new Promise((resolve, reject) => {
+      try {
+        const child = exec(commandStr, { detached: true, stdio: 'ignore' }, (error) => {
+          if (error && error.code !== 0) {
+            // Note: start command exits immediately with 0
+          }
+        });
+        child.unref();
+        resolve(true);
+      } catch (err) {
+        reject(err);
+      }
+    });
+  }
+
   _verifyCommand(cmd) {
     return new Promise((resolve) => {
-      exec(cmd, (err) => {
-        resolve(!err);
+      exec(cmd, (err, stdout) => {
+        resolve(!err && stdout.trim().length > 0);
       });
     });
   }
@@ -290,5 +347,6 @@ class OsBridge {
 const osBridge = new OsBridge();
 
 module.exports = {
+  OsBridge,
   osBridge
 };

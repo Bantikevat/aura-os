@@ -167,6 +167,7 @@ const server = http.createServer(async (req, res) => {
         intent: parsed.intent,
         target: parsed.target,
         app: parsed.app,
+        parameters: parsed.parameters,
         normalizedText: parsed.normalizedText
       });
 

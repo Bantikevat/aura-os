@@ -7,7 +7,9 @@ const ALLOWED_INTENTS = new Set([
   'CLOSE_APP',
   'CHAT',
   'CREATE_TASK',
-  'SEARCH_MEMORY'
+  'SEARCH_MEMORY',
+  'PLAY_MEDIA',
+  'SEARCH_WEB'
 ]);
 
 const DEFAULT_CONFIDENCE_THRESHOLD = 0.70;
@@ -153,7 +155,103 @@ function validateIntent(parsed, threshold = DEFAULT_CONFIDENCE_THRESHOLD) {
     };
   }
 
-  // 5. CHAT intent
+  // 5. PLAY_MEDIA (YouTube / Spotify Browser Automation)
+  if (intentType === 'PLAY_MEDIA') {
+    let target = (parsed.target || 'YOUTUBE').toUpperCase().trim();
+    const query = (parameters.query || parsed.query || parameters.title || parameters.song || '').trim();
+
+    if (!query) {
+      return {
+        isValid: false,
+        intent: null,
+        error: 'missing_media_query',
+        requiresClarification: true,
+        clarificationMessage: 'Aap kaunsa gaana ya video chalana chahte hain? Kripya naam batayein.'
+      };
+    }
+
+    let url = '';
+    let app = APP_REGISTRY[target] || APP_REGISTRY['YOUTUBE'];
+    let appName = 'YouTube';
+
+    if (target === 'SPOTIFY') {
+      url = `https://open.spotify.com/search/${encodeURIComponent(query)}`;
+      appName = 'Spotify';
+    } else {
+      target = 'YOUTUBE';
+      url = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+      appName = 'YouTube';
+    }
+
+    return {
+      isValid: true,
+      intent: 'PLAY_MEDIA',
+      target,
+      app,
+      parameters: {
+        query,
+        url,
+        service: target
+      },
+      confidence,
+      reasoning: parsed.reasoning || null,
+      responseMessage: `${appName} par "${query}" chala diya gaya hai.`,
+      requiresConfirmation: false
+    };
+  }
+
+  // 6. SEARCH_WEB (Google / Wikipedia / GitHub / YouTube Web Search Automation)
+  if (intentType === 'SEARCH_WEB') {
+    let target = (parsed.target || 'GOOGLE').toUpperCase().trim();
+    const query = (parameters.query || parsed.query || '').trim();
+
+    if (!query) {
+      return {
+        isValid: false,
+        intent: null,
+        error: 'missing_search_query',
+        requiresClarification: true,
+        clarificationMessage: 'Aap kya search karna chahte hain? Kripya batayein.'
+      };
+    }
+
+    let url = '';
+    let appName = 'Google';
+    let app = null;
+
+    if (target === 'WIKIPEDIA') {
+      url = `https://en.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(query)}`;
+      appName = 'Wikipedia';
+    } else if (target === 'GITHUB') {
+      url = `https://github.com/search?q=${encodeURIComponent(query)}`;
+      appName = 'GitHub';
+    } else if (target === 'YOUTUBE') {
+      url = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+      appName = 'YouTube';
+    } else {
+      target = 'GOOGLE';
+      url = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+      appName = 'Google';
+    }
+
+    return {
+      isValid: true,
+      intent: 'SEARCH_WEB',
+      target,
+      app,
+      parameters: {
+        query,
+        url,
+        service: target
+      },
+      confidence,
+      reasoning: parsed.reasoning || null,
+      responseMessage: `${appName} par "${query}" search kar diya gaya hai.`,
+      requiresConfirmation: false
+    };
+  }
+
+  // 7. CHAT intent
   if (intentType === 'CHAT') {
     return {
       isValid: true,
@@ -171,7 +269,7 @@ function validateIntent(parsed, threshold = DEFAULT_CONFIDENCE_THRESHOLD) {
     };
   }
 
-  // 6. CREATE_TASK intent
+  // 8. CREATE_TASK intent
   if (intentType === 'CREATE_TASK') {
     const title = parameters.title || parsed.title || parsed.taskTitle || 'Untitled Task';
     return {
@@ -188,7 +286,7 @@ function validateIntent(parsed, threshold = DEFAULT_CONFIDENCE_THRESHOLD) {
     };
   }
 
-  // 7. SEARCH_MEMORY intent
+  // 9. SEARCH_MEMORY intent
   if (intentType === 'SEARCH_MEMORY') {
     const query = parameters.query || parsed.query || '';
     return {
