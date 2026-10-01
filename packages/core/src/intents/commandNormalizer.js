@@ -1,17 +1,35 @@
 const { APP_REGISTRY, findAppByAlias } = require('../registry/appRegistry');
 
-const ytWord = '(?:youtube|you\\s*tube|yt|यूट्यूब|युटुब|यू\\s*ट्यूब|यूटुब)';
-const googleWord = '(?:google|googal|गूगल)';
-const wikiWord = '(?:wikipedia|wiki|विकिपीडिया|विकीपीडिया)';
-const ghWord = '(?:github|गिटहब|गिट\\s*हब)';
+// Pure ASCII Unicode escape sequences for cross-platform reliability
+const ytHindi = '\u092f\u0942\u091f\u094d\u092f\u0942\u092c|\u092f\u0941\u091f\u0941\u092c|\u092f\u0942 \u091f\u094d\u092f\u0942\u092c|\u092f\u0942\u091f\u0941\u092c';
+const googleHindi = '\u0917\u0942\u0917\u0932|\u0917\u0941\u0917\u0932';
+const wikiHindi = '\u0935\u093f\u0915\u093f\u092a\u0940\u0921\u093f\u092f\u093e|\u0935\u093f\u0915\u0940\u092a\u0940\u0921\u093f\u092f\u093e';
+const ghHindi = '\u0917\u093f\u091f\u0939\u092c|\u0917\u093f\u091f \u0939\u092c';
+const playHindi = '\u091a\u0932\u093e \u0926\u094b|\u091a\u0932\u093e\u0913|\u091a\u0932\u093e \u0926\u0947|\u091a\u0932\u093e \u0926\u0947\u0928\u093e|\u091a\u0932\u093e|\u092a\u094d\u0932\u0947 \u0915\u0930\u094b|\u092a\u094d\u0932\u0947 \u0915\u0930 \u0926\u094b|\u092c\u091c\u093e \u0926\u094b|\u092c\u091c\u093e\u0913|\u092c\u091c\u093e \u0926\u0947|\u0938\u0930\u094d\u091a \u0915\u0930\u094b|\u0938\u0930\u094d\u091a \u0915\u0930 \u0926\u094b|\u0938\u0930\u094d\u091a|\u0922\u0942\u0902\u0922\u094b|\u0916\u094b\u091c\u094b|\u0938\u0941\u0928\u093e\u0913|\u0938\u0941\u0928\u093e \u0926\u094b|\u0926\u093f\u0916\u093e\u0913|\u0926\u093f\u0916\u093e \u0926\u094b';
+const openHindi = '\u0916\u094b\u0932\u094b|\u0916\u094b\u0932 \u0926\u094b|\u0916\u094b\u0932\u093f\u090f|\u0916\u094b\u0932\u0928\u093e|\u0936\u0941\u0930\u0942 \u0915\u0930\u094b|\u091a\u093e\u0932\u0942 \u0915\u0930\u094b|\u091a\u093e\u0932\u0942 \u0915\u0930 \u0926\u094b|\u091a\u093e\u0932\u0942';
+const prepHindi = '\u092a\u0930|\u092a\u0947|\u092e\u0947\u0902|\u0915\u094b|\u0915\u0947';
+const closeHindi = '\u092c\u0902\u0926 \u0915\u0930\u094b|\u092c\u0902\u0926 \u0915\u0930 \u0926\u094b|\u0939\u091f\u093e\u0913|\u0939\u091f\u093e \u0926\u094b|\u092c\u0902\u0926';
+const focusHindi = '\u0938\u093e\u092e\u0928\u0947 \u0932\u093e\u0913|\u0906\u0917\u0947 \u0932\u093e\u0913|\u092b\u094b\u0915\u0938 \u0915\u0930\u094b';
 
-const playVerbs = '(?:chala\\s*do|chalao|chala\\s*de|chala\\s*dena|play\\s*karo|play\\s*kar\\s*do|play|baja\\s*do|bajao|search\\s*karo|search\\s*kar\\s*do|dhoondo|khojo|चला\\s*दो|चलाओ|चला\\s*दे|चला\\s*देना|प्ले\\s*करो|बजा\\s*दो|बजाओ|सर्च\\s*करो|सर्च\\s*कर\\s*दो|ढूंढो|खोजो|दिखाओ|दिखा\\s*दो)';
-const searchVerbs = '(?:search\\s*karo|search\\s*kar\\s*do|search|dhoondo|khojo|dekho|सर्च\\s*करो|सर्च\\s*कर\\s*दो|ढूंढो|खोजो|दिखाओ|दिखा\\s*दो|देखो)';
+const ytWord = `(?:youtube|you\\s*tube|yt|${ytHindi})`;
+const googleWord = `(?:google|googal|${googleHindi})`;
+const wikiWord = `(?:wikipedia|wiki|${wikiHindi})`;
+const ghWord = `(?:github|${ghHindi})`;
 
-const prepOpt = '(?:\\s+(?:pe|par|me|mein|ko|पर|पे|में|को))?';
+const playVerbs = `(?:chala\\s*do|chalao|chala\\s*de|chala\\s*dena|play\\s*karo|play\\s*kar\\s*do|play|baja\\s*do|bajao|baja|search\\s*karo|search\\s*kar\\s*do|search|dhoondo|khojo|suna\\s*do|sunao|${playHindi})`;
+const openVerbs = `(?:kholo|open|start|launch|khol\\s*do|kholna|kholiye|open\\s*karo|chalu\\s*karo|chalu|${openHindi})`;
+const searchVerbs = `(?:search\\s*karo|search\\s*kar\\s*do|search|dhoondo|khojo|dekho|${playHindi})`;
+
+const prepOpt = `(?:\\s+(?:pe|par|me|mein|ko|ke|${prepHindi}))?`;
 
 function extractMediaOrSearch(clean, rawPrompt) {
-  // --- 1. YouTube Matchers ---
+  // Check if it is purely an open command (e.g. "youtube kholo" or "यूट्यूब खोलो" or "open youtube")
+  if (new RegExp(`^${ytWord}${prepOpt}\\s*${openVerbs}?$`, 'i').test(clean) ||
+      new RegExp(`^${openVerbs}\\s+${ytWord}$`, 'i').test(clean)) {
+    return null; // Let standard APP_REGISTRY handle it as OPEN_APP
+  }
+
+  // 1. YouTube Queries
   // Pattern A: youtube [pe/par] chala do <query>
   let ytMatch = clean.match(new RegExp(`^${ytWord}${prepOpt}\\s+${playVerbs}\\s+(.+)`, 'i'));
   if (ytMatch && ytMatch[1] && ytMatch[1].trim()) {
@@ -27,8 +45,8 @@ function extractMediaOrSearch(clean, rawPrompt) {
     };
   }
 
-  // Pattern B: chalao <query> on youtube [par]
-  ytMatch = clean.match(new RegExp(`^${playVerbs}\\s+(.+?)\\s+(?:on|pe|par|me|mein|पर|पे|में)?\\s*${ytWord}${prepOpt}$`, 'i'));
+  // Pattern B: chalao <query> on youtube [pe/par]
+  ytMatch = clean.match(new RegExp(`^${playVerbs}\\s+(.+?)\\s+(?:on|pe|par|me|mein|${prepHindi})?\\s*${ytWord}${prepOpt}$`, 'i'));
   if (ytMatch && ytMatch[1] && ytMatch[1].trim()) {
     const q = ytMatch[1].trim();
     return {
@@ -46,22 +64,40 @@ function extractMediaOrSearch(clean, rawPrompt) {
   ytMatch = clean.match(new RegExp(`^${ytWord}${prepOpt}\\s+(.+?)\\s+${playVerbs}$`, 'i'));
   if (ytMatch && ytMatch[1] && ytMatch[1].trim()) {
     const q = ytMatch[1].trim();
-    if (!['kholo', 'open', 'start', 'खोलो'].includes(q.toLowerCase())) {
+    return {
+      isCommand: true,
+      intent: 'PLAY_MEDIA',
+      target: 'YOUTUBE',
+      app: APP_REGISTRY['YOUTUBE'],
+      parameters: { query: q, url: `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`, service: 'YOUTUBE' },
+      normalizedText: clean,
+      originalPrompt: rawPrompt
+    };
+  }
+
+  // Pattern D: Catch "youtube pe/par <query>" without explicit verb (e.g. "youtube par arjit singh ke gaane")
+  ytMatch = clean.match(new RegExp(`^${ytWord}${prepOpt}\\s+(.+)$`, 'i'));
+  if (ytMatch && ytMatch[1] && ytMatch[1].trim()) {
+    const q = ytMatch[1].trim();
+    // Verify it is not an open verb
+    if (!new RegExp(`^${openVerbs}$`, 'i').test(q)) {
+      const cleanQ = q.replace(new RegExp(`\\s+${playVerbs}$`, 'i'), '').trim();
       return {
         isCommand: true,
         intent: 'PLAY_MEDIA',
         target: 'YOUTUBE',
         app: APP_REGISTRY['YOUTUBE'],
-        parameters: { query: q, url: `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`, service: 'YOUTUBE' },
+        parameters: { query: cleanQ, url: `https://www.youtube.com/results?search_query=${encodeURIComponent(cleanQ)}`, service: 'YOUTUBE' },
         normalizedText: clean,
         originalPrompt: rawPrompt
       };
     }
   }
 
-  // --- 2. Google Matchers ---
-  // Pattern A: google [pe/par] search karo <query>
-  let gMatch = clean.match(new RegExp(`^${googleWord}${prepOpt}\\s+${searchVerbs}\\s+(.+)`, 'i'));
+  // 2. Google Queries
+  let gMatch = clean.match(new RegExp(`^${googleWord}${prepOpt}\\s+${searchVerbs}\\s+(.+)`, 'i')) ||
+               clean.match(new RegExp(`^${searchVerbs}\\s+(.+?)\\s+(?:on|pe|par|me|mein|${prepHindi})?\\s*${googleWord}${prepOpt}$`, 'i')) ||
+               clean.match(new RegExp(`^${googleWord}${prepOpt}\\s+(.+?)\\s+${searchVerbs}$`, 'i'));
   if (gMatch && gMatch[1] && gMatch[1].trim()) {
     const q = gMatch[1].trim();
     return {
@@ -75,40 +111,10 @@ function extractMediaOrSearch(clean, rawPrompt) {
     };
   }
 
-  // Pattern B: search <query> on google
-  gMatch = clean.match(new RegExp(`^${searchVerbs}\\s+(.+?)\\s+(?:on|pe|par|me|mein|पर|पे|में)?\\s*${googleWord}${prepOpt}$`, 'i'));
-  if (gMatch && gMatch[1] && gMatch[1].trim()) {
-    const q = gMatch[1].trim();
-    return {
-      isCommand: true,
-      intent: 'SEARCH_WEB',
-      target: 'GOOGLE',
-      app: APP_REGISTRY['CHROME'] || null,
-      parameters: { query: q, url: `https://www.google.com/search?q=${encodeURIComponent(q)}`, service: 'GOOGLE' },
-      normalizedText: clean,
-      originalPrompt: rawPrompt
-    };
-  }
-
-  // Pattern C: google [pe/par] <query> search karo
-  gMatch = clean.match(new RegExp(`^${googleWord}${prepOpt}\\s+(.+?)\\s+${searchVerbs}$`, 'i'));
-  if (gMatch && gMatch[1] && gMatch[1].trim()) {
-    const q = gMatch[1].trim();
-    return {
-      isCommand: true,
-      intent: 'SEARCH_WEB',
-      target: 'GOOGLE',
-      app: APP_REGISTRY['CHROME'] || null,
-      parameters: { query: q, url: `https://www.google.com/search?q=${encodeURIComponent(q)}`, service: 'GOOGLE' },
-      normalizedText: clean,
-      originalPrompt: rawPrompt
-    };
-  }
-
-  // --- 3. Wikipedia Matchers ---
+  // 3. Wikipedia Queries
   let wMatch = clean.match(new RegExp(`^${wikiWord}${prepOpt}\\s+${searchVerbs}\\s+(.+)`, 'i')) ||
                clean.match(new RegExp(`^${wikiWord}${prepOpt}\\s+(.+?)\\s+${searchVerbs}$`, 'i')) ||
-               clean.match(new RegExp(`^${searchVerbs}\\s+(.+?)\\s+(?:on|pe|par|me|mein|पर|पे|में)?\\s*${wikiWord}${prepOpt}$`, 'i'));
+               clean.match(new RegExp(`^${searchVerbs}\\s+(.+?)\\s+(?:on|pe|par|me|mein|${prepHindi})?\\s*${wikiWord}${prepOpt}$`, 'i'));
   if (wMatch && wMatch[1] && wMatch[1].trim()) {
     const q = wMatch[1].trim();
     return {
@@ -117,23 +123,6 @@ function extractMediaOrSearch(clean, rawPrompt) {
       target: 'WIKIPEDIA',
       app: null,
       parameters: { query: q, url: `https://en.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(q)}`, service: 'WIKIPEDIA' },
-      normalizedText: clean,
-      originalPrompt: rawPrompt
-    };
-  }
-
-  // --- 4. GitHub Matchers ---
-  let ghMatch = clean.match(new RegExp(`^${ghWord}${prepOpt}\\s+${searchVerbs}\\s+(.+)`, 'i')) ||
-                clean.match(new RegExp(`^${ghWord}${prepOpt}\\s+(.+?)\\s+${searchVerbs}$`, 'i')) ||
-                clean.match(new RegExp(`^${searchVerbs}\\s+(.+?)\\s+(?:on|pe|par|me|mein|पर|पे|में)?\\s*${ghWord}${prepOpt}$`, 'i'));
-  if (ghMatch && ghMatch[1] && ghMatch[1].trim()) {
-    const q = ghMatch[1].trim();
-    return {
-      isCommand: true,
-      intent: 'SEARCH_WEB',
-      target: 'GITHUB',
-      app: null,
-      parameters: { query: q, url: `https://github.com/search?q=${encodeURIComponent(q)}`, service: 'GITHUB' },
       normalizedText: clean,
       originalPrompt: rawPrompt
     };
@@ -155,7 +144,7 @@ function normalizeAndParseIntent(rawPrompt) {
   let clean = rawPrompt.toLowerCase().trim();
 
   // Strip common wake prefixes if present
-  clean = clean.replace(/^(hey aura|hello aura|aura|please|kripya|कृपया|सुनों|सुनो)\s+/i, '').trim();
+  clean = clean.replace(/^(?:hey\\s+aura|hello\\s+aura|aura|please|kripya|\\u0915\\u0943\\u092a\\u092f\\u093e|\\u0938\\u0941\\u0928\\u094b)\\s+/i, '').trim();
 
   // =========================================================================
   // 1.5 BROWSER AUTOMATION FAST PATH: MEDIA & SEARCH
@@ -177,13 +166,13 @@ function normalizeAndParseIntent(rawPrompt) {
   const closePatterns = [
     'band karo', 'band kar do', 'band kar', 'band kardo', 'close karo', 'close kar do',
     'hatao', 'hata do', 'exit', 'quit', 'kill', 'close', 'terminate',
-    'बंद करो', 'बंद कर दो', 'हटाओ', 'हटा दो', 'बंद'
+    closeHindi
   ];
 
   const focusPatterns = [
     'foreground mein lao', 'foreground me lao', 'foreground', 'focus karo', 'focus kar do',
     'focus', 'aage lao', 'samne lao', 'bring to front', 'switch to',
-    'सामने लाओ', 'आगे लाओ', 'फोकस करो'
+    focusHindi
   ];
 
   let intent = 'OPEN_APP'; // default when app is identified

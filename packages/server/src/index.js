@@ -146,8 +146,10 @@ const server = http.createServer(async (req, res) => {
     const userPrompt = (body.prompt || body.query || '').trim();
     const actionId = body.actionId || osBridge.generateActionId();
 
+    console.log(`[USER PROMPT]: "${userPrompt}"`);
     // 1. Multi-Tier Intent Understanding (Tier 1 Fast Path -> Tier 2 AI -> Tier 3 Validation)
     const parsed = await intentUnderstandingService.process(userPrompt);
+    console.log(`[INTENT RESULT]: intent=${parsed.intent}, target=${parsed.target}, isCommand=${parsed.isCommand}`);
 
     // If low confidence or unknown app requires user clarification
     if (parsed.requiresClarification) {

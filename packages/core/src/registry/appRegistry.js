@@ -9,7 +9,7 @@ const APP_REGISTRY = {
     id: 'WHATSAPP',
     displayName: 'WhatsApp',
     aliases: [
-      'whatsapp', 'whats app', 'व्हाट्सएप', 'व्हाट्सअप', 'व्हाट्सऐप', 'वाटसप', 'whatsap'
+      'whatsapp', 'whats app', '\u0935\u094d\u0939\u093e\u091f\u094d\u0938\u090f\u092a', '\u0935\u093e\u091f\u0938\u0905\u092a', '\u0935\u094d\u0939\u093e\u091f\u094d\u0938\u0905\u092a', '\u0935\u094d\u0939\u093e\u091f\u094d\u0938\u0910\u092a', 'whatsap'
     ],
     type: 'desktop_or_web',
     executableCandidates: [
@@ -30,7 +30,7 @@ const APP_REGISTRY = {
     id: 'YOUTUBE',
     displayName: 'YouTube',
     aliases: [
-      'youtube', 'you tube', 'यूट्यूब', 'युटुब', 'यू ट्यूब', 'यूटुब'
+      'youtube', 'you tube', '\u092f\u0942\u091f\u094d\u092f\u0942\u092c', '\u092f\u0941\u091f\u0941\u092c', '\u092f\u0942 \u091f\u094d\u092f\u0942\u092c', '\u092f\u0942\u091f\u0941\u092c'
     ],
     type: 'url',
     url: 'https://www.youtube.com/',
@@ -42,7 +42,7 @@ const APP_REGISTRY = {
     id: 'VS_CODE',
     displayName: 'VS Code',
     aliases: [
-      'vs code', 'vscode', 'v s code', 'वीएस कोड', 'वी एस कोड', 'विजुअल स्टूडियो कोड', 'कोड एडिटर', 'visual studio code', 'code'
+      'vs code', 'vscode', 'v s code', '\u0935\u0940\u090f\u0938 \u0915\u094b\u0921', '\u0935\u0940 \u090f\u0938 \u0915\u094b\u0921', '\u0935\u093f\u091c\u0941\u0905\u0932 \u0938\u094d\u091f\u0942\u0921\u093f\u092f\u094b \u0915\u094b\u0921', '\u0915\u094b\u0921 \u090f\u0921\u093f\u091f\u0930', 'visual studio code', 'code'
     ],
     type: 'desktop_app',
     executableCandidates: [
@@ -61,7 +61,7 @@ const APP_REGISTRY = {
     id: 'ANTIGRAVITY',
     displayName: 'Antigravity IDE',
     aliases: [
-      'antigravity', 'anti gravity', 'एंटीग्रैविटी', 'एंटी ग्रैविटी', 'एंटी ग्रेविटी', 'एंटीग्रेविटी'
+      'antigravity', 'anti gravity', '\u090f\u0902\u091f\u0940\u0917\u094d\u0930\u0947\u0935\u093f\u091f\u0940', '\u090f\u0902\u091f\u0940 \u0917\u094d\u0930\u0947\u0935\u093f\u091f\u0940'
     ],
     type: 'desktop_app',
     executableCandidates: [
@@ -78,7 +78,7 @@ const APP_REGISTRY = {
     id: 'CHROME',
     displayName: 'Google Chrome',
     aliases: [
-      'chrome', 'google chrome', 'गूगल क्रोम', 'क्रोम'
+      'chrome', 'google chrome', '\u0917\u0942\u0917\u0932 \u0915\u094d\u0930\u094b\u092e', '\u0915\u094d\u0930\u094b\u092e'
     ],
     type: 'desktop_app',
     executableCandidates: [
@@ -96,7 +96,7 @@ const APP_REGISTRY = {
     id: 'NOTEPAD',
     displayName: 'Notepad',
     aliases: [
-      'notepad', 'नोटपैड'
+      'notepad', '\u0928\u094b\u091f\u092a\u0948\u0921', '\u0928\u094b\u091f \u092a\u0948\u0921'
     ],
     type: 'desktop_app',
     executableCandidates: [
@@ -113,7 +113,7 @@ const APP_REGISTRY = {
     id: 'CALCULATOR',
     displayName: 'Calculator',
     aliases: [
-      'calculator', 'calc', 'कैलकुलेटर', 'हिसाब'
+      'calculator', 'calc', '\u0915\u0948\u0932\u0915\u0941\u0932\u0947\u091f\u0930', '\u0915\u0948\u0932\u0915'
     ],
     type: 'desktop_app',
     executableCandidates: [
@@ -130,7 +130,7 @@ const APP_REGISTRY = {
     id: 'PAINT',
     displayName: 'Paint',
     aliases: [
-      'paint', 'mspaint', 'पेंट'
+      'paint', 'mspaint', '\u092a\u0947\u0902\u091f', '\u0921\u094d\u0930\u093e\u0907\u0902\u0917'
     ],
     type: 'desktop_app',
     executableCandidates: [
@@ -147,7 +147,7 @@ const APP_REGISTRY = {
     id: 'FILE_EXPLORER',
     displayName: 'File Explorer',
     aliases: [
-      'file explorer', 'explorer', 'my computer', 'फ़ाइल एक्सप्लोरर', 'फाइल एक्सप्लोरर', 'फाइल', 'फ़ाइल', 'दस्तावेज़'
+      'file explorer', 'explorer', 'my computer', '\u092b\u093e\u0907\u0932 \u090f\u0915\u094d\u0938\u092a\u094d\u0932\u094b\u0930\u0930', '\u092e\u093e\u092f \u0915\u0902\u092a\u094d\u092f\u0942\u091f\u0930', '\u092b\u093e\u0907\u0932 \u092e\u0948\u0928\u0947\u091c\u0930'
     ],
     type: 'desktop_app',
     executableCandidates: [
@@ -163,7 +163,7 @@ const APP_REGISTRY = {
     id: 'TERMINAL',
     displayName: 'Command Prompt',
     aliases: [
-      'terminal', 'cmd', 'command prompt', 'powershell', 'टर्मिनल', 'कमांड'
+      'terminal', 'cmd', 'command prompt', 'powershell', '\u091f\u0930\u094d\u092e\u093f\u0928\u0932', '\u0915\u092e\u093e\u0902\u0921 \u092a\u094d\u0930\u0949\u092e\u094d\u092a\u094d\u091f'
     ],
     type: 'desktop_app',
     executableCandidates: ['cmd.exe'],
@@ -177,7 +177,7 @@ const APP_REGISTRY = {
     id: 'TASK_MANAGER',
     displayName: 'Task Manager',
     aliases: [
-      'task manager', 'taskmgr', 'टास्क मैनेजर'
+      'task manager', 'taskmgr', '\u091f\u093e\u0938\u094d\u0915 \u092e\u0948\u0928\u0947\u091c\u0930'
     ],
     type: 'desktop_app',
     executableCandidates: ['taskmgr.exe'],
@@ -191,7 +191,7 @@ const APP_REGISTRY = {
     id: 'SETTINGS',
     displayName: 'Windows Settings',
     aliases: [
-      'settings', 'सेटिंग्स', 'सेटिंग'
+      'settings', '\u0938\u0947\u091f\u093f\u0902\u0917\u094d\u0938', '\u0938\u0947\u091f\u093f\u0902\u0917'
     ],
     type: 'desktop_app',
     executableCandidates: ['start ms-settings:'],
@@ -203,17 +203,30 @@ const APP_REGISTRY = {
 };
 
 function findAppByAlias(query) {
-  if (!query) return null;
-  const q = query.toLowerCase().trim();
-  
-  for (const key of Object.keys(APP_REGISTRY)) {
+  if (!query || typeof query !== 'string') return null;
+  const clean = query.toLowerCase().trim();
+
+  // 1. Exact alias match
+  for (const key in APP_REGISTRY) {
     const app = APP_REGISTRY[key];
     for (const alias of app.aliases) {
-      if (q.includes(alias.toLowerCase())) {
+      if (clean === alias.toLowerCase()) {
         return app;
       }
     }
   }
+
+  // 2. Substring match (e.g. "open notepad now" contains "notepad")
+  for (const key in APP_REGISTRY) {
+    const app = APP_REGISTRY[key];
+    for (const alias of app.aliases) {
+      const regex = new RegExp(`\\b${alias.toLowerCase()}\\b`, 'i');
+      if (regex.test(clean) || clean.includes(alias.toLowerCase())) {
+        return app;
+      }
+    }
+  }
+
   return null;
 }
 
