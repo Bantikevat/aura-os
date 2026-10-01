@@ -139,6 +139,21 @@ const server = http.createServer(async (req, res) => {
   }
 
   // --- WhatsApp Portal Endpoints ---
+  if (url.pathname === '/api/whatsapp/contacts' && req.method === 'GET') {
+    const search = (url.searchParams.get('search') || '').toLowerCase().trim();
+    let contacts = whatsappPortalManager.getContacts();
+    if (search) {
+      contacts = contacts.filter(c =>
+        (c.name && c.name.toLowerCase().includes(search)) ||
+        (c.phone && c.phone.includes(search))
+      );
+    }
+    return sendJSON(res, 200, {
+      total: contacts.length,
+      contacts: contacts.slice(0, 150)
+    });
+  }
+
   if (url.pathname === '/api/whatsapp/status' && req.method === 'GET') {
     return sendJSON(res, 200, whatsappPortalManager.getStatus());
   }

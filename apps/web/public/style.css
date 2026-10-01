@@ -1096,3 +1096,35 @@ body.light-theme {
   background: #20ba59;
   transform: scale(1.02);
 }
+
+.wa-sidebar-tabs {
+  display: flex;
+  background: rgba(0, 0, 0, 0.35);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 4px;
+  gap: 4px;
+}
+
+.wa-tab-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 6px 4px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.wa-tab-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.wa-tab-btn.active {
+  background: rgba(37, 211, 102, 0.2);
+  color: #25d366;
+  font-weight: 700;
+}

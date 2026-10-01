@@ -696,9 +696,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const waComposerInput = document.getElementById('waComposerInput');
   const waComposerSendBtn = document.getElementById('waComposerSendBtn');
   const waQuickContacts = document.getElementById('waQuickContacts');
+  const waChatSearch = document.getElementById('waChatSearch');
+  const waTabChats = document.getElementById('waTabChats');
+  const waTabContacts = document.getElementById('waTabContacts');
+  const waChatsCount = document.getElementById('waChatsCount');
+  const waContactsCount = document.getElementById('waContactsCount');
 
   let waPollTimer = null;
   let activeChatJid = null;
+  let currentWaTab = 'contacts'; // default to contacts so user sees them immediately!
+  let cachedChats = [];
+  let cachedContacts = [];
 
   function setWaStatusBadge(status, user) {
     if (!waWindowStatusBadge) return;
@@ -735,7 +743,14 @@ document.addEventListener('DOMContentLoaded', () => {
       if (data.status === 'CONNECTED') {
         if (waScanView) waScanView.style.display = 'none';
         if (waConnectedView) waConnectedView.style.display = 'flex';
-        renderWhatsAppChats(data.chats || []);
+
+        cachedChats = data.chats || [];
+        cachedContacts = data.contacts || [];
+
+        if (waChatsCount) waChatsCount.textContent = cachedChats.length;
+        if (waContactsCount) waContactsCount.textContent = data.totalContacts || cachedContacts.length;
+
+        renderCurrentSidebarList();
       } else if (data.status === 'SCAN_QR' && data.qr) {
         if (waConnectedView) waConnectedView.style.display = 'none';
         if (waScanView) waScanView.style.display = 'flex';
@@ -757,34 +772,127 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function renderWhatsAppChats(chats) {
+  function renderCurrentSidebarList() {
     if (!waChatsList) return;
-    if (!chats.length) {
-      waChatsList.innerHTML = '<div style="padding:20px; text-align:center; color:#64748b; font-size:0.8rem;">No active chats yet</div>';
-      return;
-    }
-    waChatsList.innerHTML = chats.map(c => `
-      <div class="wa-chat-item ${activeChatJid === c.id ? 'active' : ''}" data-jid="${c.id}" data-name="${encodeURIComponent(c.name || '')}">
-        <div class="wa-chat-avatar">${(c.name || 'W')[0].toUpperCase()}</div>
-        <div class="wa-chat-info">
-          <div class="wa-chat-name">${c.name || c.id.split('@')[0]}</div>
-          <div class="wa-chat-snippet">${c.lastMessage || 'Message'}</div>
-        </div>
-      </div>
-    `).join('');
+    const query = (waChatSearch ? waChatSearch.value : '').toLowerCase().trim();
 
-    // Attach click handlers to select chat
-    waChatsList.querySelectorAll('.wa-chat-item').forEach(item => {
-      item.addEventListener('click', () => {
-        activeChatJid = item.getAttribute('data-jid');
-        const name = decodeURIComponent(item.getAttribute('data-name') || '');
-        const chat = chats.find(c => c.id === activeChatJid);
-        const titleEl = document.getElementById('waActiveChatTitle');
-        if (titleEl) titleEl.textContent = name || activeChatJid.split('@')[0];
-        if (waComposerPhone) waComposerPhone.value = activeChatJid.split('@')[0];
-        renderChatMessages(chat);
-        renderWhatsAppChats(chats);
+    if (currentWaTab === 'contacts') {
+      let filtered = cachedContacts;
+      if (query) {
+        filtered = filtered.filter(c =>
+          (c.name && c.name.toLowerCase().includes(query)) ||
+          (c.phone && c.phone.includes(query))
+        );
+      }
+
+      if (!filtered.length) {
+        waChatsList.innerHTML = '<div style="padding:24px; text-align:center; color:#64748b; font-size:0.82rem;">No contacts found</div>';
+        return;
+      }
+
+      waChatsList.innerHTML = filtered.map(c => `
+        <div class="wa-chat-item ${activeChatJid === c.id ? 'active' : ''}" data-jid="${c.id}" data-phone="${c.phone}" data-name="${encodeURIComponent(c.name || c.phone)}">
+          <div class="wa-chat-avatar" style="background:#0f172a; color:#25d366; border-color:rgba(37,211,102,0.3);">${(c.name || 'U')[0].toUpperCase()}</div>
+          <div class="wa-chat-info">
+            <div class="wa-chat-name">${c.name || c.phone}</div>
+            <div class="wa-chat-snippet" style="color:#64748b;">${c.phone || c.id}</div>
+          </div>
+        </div>
+      `).join('');
+
+      waChatsList.querySelectorAll('.wa-chat-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const jid = item.getAttribute('data-jid');
+          const phone = item.getAttribute('data-phone');
+          const name = decodeURIComponent(item.getAttribute('data-name') || '');
+          activeChatJid = jid;
+
+          const titleEl = document.getElementById('waActiveChatTitle');
+          if (titleEl) titleEl.textContent = name;
+          if (waComposerPhone) waComposerPhone.value = phone || jid.split('@')[0];
+
+          const matchedChat = cachedChats.find(ch => ch.id === jid);
+          renderChatMessages(matchedChat);
+          renderCurrentSidebarList();
+        });
       });
+
+    } else {
+      // Chats Tab
+      let filtered = cachedChats;
+      if (query) {
+        filtered = filtered.filter(c =>
+          (c.name && c.name.toLowerCase().includes(query)) ||
+          (c.id && c.id.includes(query))
+        );
+      }
+
+      if (!filtered.length) {
+        waChatsList.innerHTML = '<div style="padding:24px; text-align:center; color:#64748b; font-size:0.82rem;">No active chats yet. Click "Contacts" above to message anyone!</div>';
+        return;
+      }
+
+      waChatsList.innerHTML = filtered.map(c => `
+        <div class="wa-chat-item ${activeChatJid === c.id ? 'active' : ''}" data-jid="${c.id}" data-name="${encodeURIComponent(c.name || '')}">
+          <div class="wa-chat-avatar">${(c.name || 'W')[0].toUpperCase()}</div>
+          <div class="wa-chat-info">
+            <div class="wa-chat-name">${c.name || c.id.split('@')[0]}</div>
+            <div class="wa-chat-snippet">${c.lastMessage || 'Message'}</div>
+          </div>
+        </div>
+      `).join('');
+
+      waChatsList.querySelectorAll('.wa-chat-item').forEach(item => {
+        item.addEventListener('click', () => {
+          activeChatJid = item.getAttribute('data-jid');
+          const name = decodeURIComponent(item.getAttribute('data-name') || '');
+          const chat = cachedChats.find(c => c.id === activeChatJid);
+          const titleEl = document.getElementById('waActiveChatTitle');
+          if (titleEl) titleEl.textContent = name || activeChatJid.split('@')[0];
+          if (waComposerPhone) waComposerPhone.value = activeChatJid.split('@')[0];
+          renderChatMessages(chat);
+          renderCurrentSidebarList();
+        });
+      });
+    }
+  }
+
+  // Sidebar Tab Switchers
+  if (waTabChats) {
+    waTabChats.addEventListener('click', () => {
+      currentWaTab = 'chats';
+      waTabChats.classList.add('active');
+      if (waTabContacts) waTabContacts.classList.remove('active');
+      renderCurrentSidebarList();
+    });
+  }
+
+  if (waTabContacts) {
+    waTabContacts.addEventListener('click', () => {
+      currentWaTab = 'contacts';
+      waTabContacts.classList.add('active');
+      if (waTabChats) waTabChats.classList.remove('active');
+      renderCurrentSidebarList();
+    });
+  }
+
+  // Search filter handler
+  if (waChatSearch) {
+    waChatSearch.addEventListener('input', () => {
+      const q = waChatSearch.value.trim();
+      if (currentWaTab === 'contacts' && q.length >= 2) {
+        fetch('/api/whatsapp/contacts?search=' + encodeURIComponent(q))
+          .then(r => r.json())
+          .then(res => {
+            if (res.contacts) {
+              cachedContacts = res.contacts;
+              renderCurrentSidebarList();
+            }
+          })
+          .catch(() => renderCurrentSidebarList());
+      } else {
+        renderCurrentSidebarList();
+      }
     });
   }
 

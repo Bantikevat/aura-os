@@ -563,7 +563,11 @@
         <!-- LEFT: RECENT CHATS -->
         <div class="wa-chat-sidebar">
           <div class="wa-sidebar-header">
-            <input type="text" id="waChatSearch" placeholder="🔍 Search contacts..." />
+            <input type="text" id="waChatSearch" placeholder="🔍 Search contacts or numbers..." />
+          </div>
+          <div class="wa-sidebar-tabs">
+            <button id="waTabChats" class="wa-tab-btn active">💬 Chats (<span id="waChatsCount">0</span>)</button>
+            <button id="waTabContacts" class="wa-tab-btn">👥 Contacts (<span id="waContactsCount">3900+</span>)</button>
           </div>
           <div class="wa-chats-list" id="waChatsList">
             <!-- Dynamically populated -->
