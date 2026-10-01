@@ -1,3 +1,4 @@
+const https = require('https');
 const { exec, spawn } = require('child_process');
 const fs = require('fs');
 
@@ -214,10 +215,61 @@ class OsBridge {
     };
   }
 
+  async _getTopYouTubeVideo(query) {
+    return new Promise((resolve) => {
+      try {
+        const req = https.get(
+          `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`,
+          {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+              'Accept-Language': 'hi,en-US;q=0.9,en;q=0.8'
+            },
+            timeout: 2500
+          },
+          (res) => {
+            let data = '';
+            res.on('data', (chunk) => {
+              data += chunk;
+              const match = data.match(/\/watch\?v=([a-zA-Z0-9_-]{11})/);
+              if (match) {
+                req.destroy();
+                resolve(`https://www.youtube.com/watch?v=${match[1]}&autoplay=1`);
+              }
+            });
+            res.on('end', () => {
+              const match = data.match(/\/watch\?v=([a-zA-Z0-9_-]{11})/);
+              resolve(match ? `https://www.youtube.com/watch?v=${match[1]}&autoplay=1` : null);
+            });
+          }
+        );
+        req.on('timeout', () => {
+          req.destroy();
+          resolve(null);
+        });
+        req.on('error', () => resolve(null));
+      } catch (e) {
+        resolve(null);
+      }
+    });
+  }
+
   async _handlePlayMedia({ app, parameters, target }) {
     const query = (parameters && parameters.query) || 'Music';
-    const url = (parameters && parameters.url) || `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+    let url = (parameters && parameters.url) || `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
     const appName = target === 'SPOTIFY' ? 'Spotify' : 'YouTube';
+
+    // Auto-resolve top video so YouTube directly plays without user needing to click
+    if (target === 'YOUTUBE' || !target) {
+      try {
+        const directUrl = await this._getTopYouTubeVideo(query);
+        if (directUrl) {
+          url = directUrl;
+        }
+      } catch (err) {
+        // Fallback to search query results
+      }
+    }
 
     this._launchBrowserUrl(url);
 
@@ -227,7 +279,7 @@ class OsBridge {
       url,
       appName,
       query,
-      response: `${appName} par "${query}" chala diya gaya hai.`
+      response: `${appName} par "${query}" play kar diya gaya hai.`
     };
   }
 
