@@ -171,9 +171,14 @@ class OsBridge {
         };
       }
 
-      // Use safe fallback (WhatsApp Web) truthfully reporting fallback
+      // Use safe fallback (WhatsApp Web App Mode)
       if (app.fallback && app.fallback.type === 'url') {
-        this._launchBrowserUrl(app.fallback.url);
+        const chromePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+        if (app.id === 'WHATSAPP' && fs.existsSync(chromePath)) {
+          this._launchDetached(`start "" "${chromePath}" --app="${app.fallback.url}"`);
+        } else {
+          this._launchBrowserUrl(app.fallback.url);
+        }
         return {
           success: true,
           action: 'open_url',

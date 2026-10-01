@@ -963,6 +963,21 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
   if (waBtnRefresh) waBtnRefresh.addEventListener('click', fetchWhatsAppStatus);
+  const waBtnOpenRealApp = document.getElementById('waBtnOpenRealApp');
+  if (waBtnOpenRealApp) {
+    waBtnOpenRealApp.addEventListener('click', async () => {
+      try {
+        await fetch('/api/execute', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: 'WhatsApp kholo' })
+        });
+        speakAura("Real WhatsApp Web application window open kar diya gaya hai.");
+      } catch (err) {
+        alert('Failed to launch: ' + err.message);
+      }
+    });
+  }
 
   // Start Session Button
   if (waBtnStartSession) {
