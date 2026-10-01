@@ -6,6 +6,7 @@ const { AuraEngine } = require('../../core/src/engine');
 const { osBridge } = require('./osBridge');
 const { normalizeAndParseIntent } = require('../../core/src/intents/commandNormalizer');
 const { intentUnderstandingService } = require('../../core/src/intents/IntentUnderstandingService');
+const { whatsappPortalManager } = require('./whatsapp/whatsappPortalManager');
 
 const aura = new AuraEngine();
 const PORT = process.env.PORT || 3000;
@@ -135,6 +136,35 @@ const server = http.createServer(async (req, res) => {
       milestones: body.milestones || []
     });
     return sendJSON(res, 201, { goal });
+  }
+
+  // --- WhatsApp Portal Endpoints ---
+  if (url.pathname === '/api/whatsapp/status' && req.method === 'GET') {
+    return sendJSON(res, 200, whatsappPortalManager.getStatus());
+  }
+
+  if (url.pathname === '/api/whatsapp/start' && req.method === 'POST') {
+    const status = await whatsappPortalManager.start();
+    return sendJSON(res, 200, status);
+  }
+
+  if (url.pathname === '/api/whatsapp/send' && req.method === 'POST') {
+    const body = await parseBody(req);
+    const { to, message } = body;
+    if (!to || !message) {
+      return sendJSON(res, 400, { error: 'Both "to" and "message" are required.' });
+    }
+    try {
+      const result = await whatsappPortalManager.sendMessage(to, message);
+      return sendJSON(res, 200, result);
+    } catch (err) {
+      return sendJSON(res, 500, { error: err.message });
+    }
+  }
+
+  if (url.pathname === '/api/whatsapp/logout' && req.method === 'POST') {
+    const result = await whatsappPortalManager.logout();
+    return sendJSON(res, 200, result);
   }
 
   if (url.pathname === '/api/audits' && req.method === 'GET') {

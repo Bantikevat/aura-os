@@ -241,6 +241,20 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    // WhatsApp Portal Window toggle via voice
+    if (
+      lower.includes('whatsapp portal') || 
+      lower.includes('whatsapp window') || 
+      lower.includes('whatsapp login') ||
+      lower.includes('whatsapp screen') ||
+      lower.includes('\u0935\u094d\u0939\u093e\u091f\u094d\u0938\u090f\u092a \u092a\u094b\u0930\u094d\u091f\u0932') ||
+      lower.includes('\u0935\u094d\u0939\u093e\u091f\u094d\u0938\u090f\u092a \u0935\u093f\u0902\u0921\u094b')
+    ) {
+      if (typeof openWhatsAppWindow === 'function') openWhatsAppWindow();
+      speakAura("WhatsApp portal window open ho gaya hai.");
+      return;
+    }
+
     // Set UI State: Understanding
     setUiState('understanding', text);
 
@@ -657,6 +671,256 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('click', () => {
     auraVoiceEngine.requestMicPermission();
   }, { once: true });
+
+  // =========================================================================
+  // WHATSAPP PORTAL LIVE WINDOW CONTROLLER
+  // =========================================================================
+  const topWhatsAppBtn = document.getElementById('topWhatsAppBtn');
+  const waStatusDot = document.getElementById('waStatusDot');
+  const auraWhatsAppPortalWindow = document.getElementById('auraWhatsAppPortalWindow');
+  const waBtnClose = document.getElementById('waBtnClose');
+  const waBtnDock = document.getElementById('waBtnDock');
+  const waBtnRefresh = document.getElementById('waBtnRefresh');
+  const waBtnStartSession = document.getElementById('waBtnStartSession');
+  const waBtnLogout = document.getElementById('waBtnLogout');
+  const waScanView = document.getElementById('waScanView');
+  const waConnectedView = document.getElementById('waConnectedView');
+  const waQrSpinner = document.getElementById('waQrSpinner');
+  const waQrImage = document.getElementById('waQrImage');
+  const waScanLaser = document.getElementById('waScanLaser');
+  const waWindowStatusBadge = document.getElementById('waWindowStatusBadge');
+  const waWindowUserDetail = document.getElementById('waWindowUserDetail');
+  const waChatsList = document.getElementById('waChatsList');
+  const waMessagesContainer = document.getElementById('waMessagesContainer');
+  const waComposerPhone = document.getElementById('waComposerPhone');
+  const waComposerInput = document.getElementById('waComposerInput');
+  const waComposerSendBtn = document.getElementById('waComposerSendBtn');
+  const waQuickContacts = document.getElementById('waQuickContacts');
+
+  let waPollTimer = null;
+  let activeChatJid = null;
+
+  function setWaStatusBadge(status, user) {
+    if (!waWindowStatusBadge) return;
+    if (status === 'CONNECTED') {
+      waWindowStatusBadge.className = 'wa-badge wa-connected';
+      waWindowStatusBadge.textContent = 'LIVE CONNECTED';
+      if (waStatusDot) waStatusDot.style.background = '#22c55e';
+      if (waWindowUserDetail) {
+        waWindowUserDetail.textContent = `Logged in: ${user?.name || 'User'} (${user?.phone || ''})`;
+      }
+    } else if (status === 'SCAN_QR' || status === 'INITIALIZING') {
+      waWindowStatusBadge.className = 'wa-badge wa-scan';
+      waWindowStatusBadge.textContent = 'SCAN QR CODE';
+      if (waStatusDot) waStatusDot.style.background = '#eab308';
+      if (waWindowUserDetail) {
+        waWindowUserDetail.textContent = 'Waiting for phone scan...';
+      }
+    } else {
+      waWindowStatusBadge.className = 'wa-badge wa-disconnected';
+      waWindowStatusBadge.textContent = 'OFFLINE';
+      if (waStatusDot) waStatusDot.style.background = '#ef4444';
+      if (waWindowUserDetail) {
+        waWindowUserDetail.textContent = 'Click "Connect WhatsApp Now" to link';
+      }
+    }
+  }
+
+  async function fetchWhatsAppStatus() {
+    try {
+      const res = await fetch('/api/whatsapp/status');
+      const data = await res.json();
+      setWaStatusBadge(data.status, data.user);
+
+      if (data.status === 'CONNECTED') {
+        if (waScanView) waScanView.style.display = 'none';
+        if (waConnectedView) waConnectedView.style.display = 'flex';
+        renderWhatsAppChats(data.chats || []);
+      } else if (data.status === 'SCAN_QR' && data.qr) {
+        if (waConnectedView) waConnectedView.style.display = 'none';
+        if (waScanView) waScanView.style.display = 'flex';
+        if (waQrSpinner) waQrSpinner.style.display = 'none';
+        if (waQrImage) {
+          waQrImage.src = data.qr;
+          waQrImage.style.display = 'block';
+        }
+        if (waScanLaser) waScanLaser.style.display = 'block';
+      } else {
+        if (waConnectedView) waConnectedView.style.display = 'none';
+        if (waScanView) waScanView.style.display = 'flex';
+        if (waQrImage) waQrImage.style.display = 'none';
+        if (waScanLaser) waScanLaser.style.display = 'none';
+        if (waQrSpinner) waQrSpinner.style.display = 'block';
+      }
+    } catch (e) {
+      console.error('[AURA WA] Status check error:', e);
+    }
+  }
+
+  function renderWhatsAppChats(chats) {
+    if (!waChatsList) return;
+    if (!chats.length) {
+      waChatsList.innerHTML = '<div style="padding:20px; text-align:center; color:#64748b; font-size:0.8rem;">No active chats yet</div>';
+      return;
+    }
+    waChatsList.innerHTML = chats.map(c => `
+      <div class="wa-chat-item ${activeChatJid === c.id ? 'active' : ''}" data-jid="${c.id}" data-name="${encodeURIComponent(c.name || '')}">
+        <div class="wa-chat-avatar">${(c.name || 'W')[0].toUpperCase()}</div>
+        <div class="wa-chat-info">
+          <div class="wa-chat-name">${c.name || c.id.split('@')[0]}</div>
+          <div class="wa-chat-snippet">${c.lastMessage || 'Message'}</div>
+        </div>
+      </div>
+    `).join('');
+
+    // Attach click handlers to select chat
+    waChatsList.querySelectorAll('.wa-chat-item').forEach(item => {
+      item.addEventListener('click', () => {
+        activeChatJid = item.getAttribute('data-jid');
+        const name = decodeURIComponent(item.getAttribute('data-name') || '');
+        const chat = chats.find(c => c.id === activeChatJid);
+        const titleEl = document.getElementById('waActiveChatTitle');
+        if (titleEl) titleEl.textContent = name || activeChatJid.split('@')[0];
+        if (waComposerPhone) waComposerPhone.value = activeChatJid.split('@')[0];
+        renderChatMessages(chat);
+        renderWhatsAppChats(chats);
+      });
+    });
+  }
+
+  function renderChatMessages(chat) {
+    if (!waMessagesContainer) return;
+    if (!chat || !chat.messages || !chat.messages.length) {
+      waMessagesContainer.innerHTML = '<div class="wa-empty-chat-prompt"><span>💬</span><p>Start conversation with this contact</p></div>';
+      return;
+    }
+    waMessagesContainer.innerHTML = chat.messages.map(m => `
+      <div class="wa-bubble ${m.fromMe ? 'outgoing' : 'incoming'}">
+        <div>${m.text}</div>
+        <div class="wa-msg-meta">${new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+      </div>
+    `).join('');
+    waMessagesContainer.scrollTop = waMessagesContainer.scrollHeight;
+  }
+
+  window.openWhatsAppWindow = function() {
+    if (auraWhatsAppPortalWindow) {
+      auraWhatsAppPortalWindow.style.display = 'flex';
+      fetchWhatsAppStatus();
+      if (!waPollTimer) {
+        waPollTimer = setInterval(fetchWhatsAppStatus, 3000);
+      }
+    }
+  };
+
+  window.closeWhatsAppWindow = function() {
+    if (auraWhatsAppPortalWindow) {
+      auraWhatsAppPortalWindow.style.display = 'none';
+      if (waPollTimer) {
+        clearInterval(waPollTimer);
+        waPollTimer = null;
+      }
+    }
+  };
+
+  // Quick Contacts Pills
+  if (waQuickContacts) {
+    waQuickContacts.addEventListener('click', (e) => {
+      const chip = e.target.closest('.wa-contact-chip');
+      if (!chip) return;
+      const phone = chip.getAttribute('data-phone');
+      const name = chip.getAttribute('data-name');
+      if (waComposerPhone) waComposerPhone.value = phone;
+      const titleEl = document.getElementById('waActiveChatTitle');
+      if (titleEl) titleEl.textContent = name;
+    });
+  }
+
+  // Top header button
+  if (topWhatsAppBtn) {
+    topWhatsAppBtn.addEventListener('click', () => {
+      if (auraWhatsAppPortalWindow.style.display === 'none' || !auraWhatsAppPortalWindow.style.display) {
+        window.openWhatsAppWindow();
+      } else {
+        window.closeWhatsAppWindow();
+      }
+    });
+  }
+
+  // Window close / dock / refresh
+  if (waBtnClose) waBtnClose.addEventListener('click', window.closeWhatsAppWindow);
+  if (waBtnDock) {
+    waBtnDock.addEventListener('click', () => {
+      auraWhatsAppPortalWindow.classList.toggle('docked');
+    });
+  }
+  if (waBtnRefresh) waBtnRefresh.addEventListener('click', fetchWhatsAppStatus);
+
+  // Start Session Button
+  if (waBtnStartSession) {
+    waBtnStartSession.addEventListener('click', async () => {
+      if (waQrSpinner) waQrSpinner.style.display = 'block';
+      if (waQrImage) waQrImage.style.display = 'none';
+      try {
+        await fetch('/api/whatsapp/start', { method: 'POST' });
+        fetchWhatsAppStatus();
+      } catch (err) {
+        alert('Failed to start WhatsApp session: ' + err.message);
+      }
+    });
+  }
+
+  // Logout Button
+  if (waBtnLogout) {
+    waBtnLogout.addEventListener('click', async () => {
+      if (confirm('Kya aap WhatsApp portal se disconnect karna chahte hain?')) {
+        try {
+          await fetch('/api/whatsapp/logout', { method: 'POST' });
+          fetchWhatsAppStatus();
+        } catch (e) {
+          alert('Logout error: ' + e.message);
+        }
+      }
+    });
+  }
+
+  // Send Message from Composer
+  async function handlePortalSend() {
+    const to = (waComposerPhone ? waComposerPhone.value : '').trim();
+    const message = (waComposerInput ? waComposerInput.value : '').trim();
+    if (!to || !message) {
+      alert('Kripya contact/phone number aur message dono likhein.');
+      return;
+    }
+    if (waComposerSendBtn) waComposerSendBtn.disabled = true;
+    try {
+      const res = await fetch('/api/whatsapp/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ to, message })
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+
+      if (waComposerInput) waComposerInput.value = '';
+      fetchWhatsAppStatus();
+      speakAura(`${to} ko WhatsApp par message bhej diya gaya hai.`);
+    } catch (err) {
+      alert('Message send error: ' + err.message);
+    } finally {
+      if (waComposerSendBtn) waComposerSendBtn.disabled = false;
+    }
+  }
+
+  if (waComposerSendBtn) waComposerSendBtn.addEventListener('click', handlePortalSend);
+  if (waComposerInput) {
+    waComposerInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') handlePortalSend();
+    });
+  }
+
+  // Initial check on page load to set dot status
+  fetchWhatsAppStatus();
 
   console.log('[AURA V3] Real Working System Online with 16 Pages and Luxury Header.');
 });

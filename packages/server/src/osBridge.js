@@ -398,13 +398,36 @@ if ($proc) {
     const recipient = parameters && parameters.recipient ? parameters.recipient : 'Recipient';
     const message = parameters && parameters.message ? parameters.message : '';
     const phone = parameters && parameters.phone ? parameters.phone : '';
-    const url = parameters && parameters.url ? parameters.url : (
-      phone 
-        ? `https://web.whatsapp.com/send?phone=${encodeURIComponent(phone)}&text=${encodeURIComponent(message)}`
-        : 'https://web.whatsapp.com/'
-    );
 
     if (rawTarget === 'WHATSAPP' || !rawTarget) {
+      // 1. Try WhatsApp Portal (Multi-Device socket) if connected
+      try {
+        const { whatsappPortalManager } = require('./whatsapp/whatsappPortalManager');
+        if (whatsappPortalManager && whatsappPortalManager.getStatus().isConnected) {
+          const directTarget = phone || recipient;
+          const sentResult = await whatsappPortalManager.sendMessage(directTarget, message);
+          return {
+            success: true,
+            action: 'send_message',
+            target: 'WHATSAPP',
+            recipient,
+            phone: sentResult.phone,
+            message,
+            portalDirect: true,
+            response: `${recipient} ko WhatsApp portal se message bhej diya gaya hai: "${message}"`
+          };
+        }
+      } catch (portalErr) {
+        console.warn('[OS BRIDGE] WhatsApp portal direct send failed, falling back to browser deep link:', portalErr.message);
+      }
+
+      // 2. Fallback to Official Web Deep Link
+      const url = parameters && parameters.url ? parameters.url : (
+        phone 
+          ? `https://web.whatsapp.com/send?phone=${encodeURIComponent(phone)}&text=${encodeURIComponent(message)}`
+          : 'https://web.whatsapp.com/'
+      );
+
       const launchCommand = `start "" "${url}"`;
       try {
         await this._launchDetached(launchCommand);

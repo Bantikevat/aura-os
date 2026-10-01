@@ -126,6 +126,13 @@
           </div>
         </div>
 
+        <!-- WhatsApp Portal Button -->
+        <button class="icon-round-btn whatsapp-portal-pill" id="topWhatsAppBtn" title="AURA WhatsApp Portal & Live Chats" style="display:flex; align-items:center; gap:6px; padding:0 12px; border-radius:20px; background:rgba(37,211,102,0.12); border:1px solid rgba(37,211,102,0.3); color:#25d366; cursor:pointer;">
+          <span style="font-size:1.15rem;">💬</span>
+          <span id="waStatusDot" style="width:8px; height:8px; border-radius:50%; background:#ef4444; display:inline-block;"></span>
+          <span style="font-size:0.78rem; font-weight:700; letter-spacing:0.5px;">WhatsApp</span>
+        </button>
+
         <!-- Theme Toggle Button -->
         <button class="icon-round-btn theme" id="themeBtn" title="Toggle Theme (Dark / Cyber / Light)">☀️</button>
 
@@ -500,6 +507,103 @@
 
   <!-- Instant App Launcher Toast -->
   <div id="auraAppLaunchToast" class="aura-app-launch-toast" style="display:none;"></div>
+
+  <!-- AURA WHATSAPP PORTAL LIVE WINDOW -->
+  <div id="auraWhatsAppPortalWindow" class="aura-wa-window" style="display:none;">
+    <div class="aura-wa-header">
+      <div class="aura-wa-title-box">
+        <span class="wa-logo-icon">💬</span>
+        <div>
+          <div class="wa-title-row">
+            <span class="wa-title-text">AURA WhatsApp Portal</span>
+            <span id="waWindowStatusBadge" class="wa-badge wa-disconnected">OFFLINE</span>
+          </div>
+          <div id="waWindowUserDetail" class="wa-user-sub">Click "Connect" to link WhatsApp</div>
+        </div>
+      </div>
+      <div class="aura-wa-window-actions">
+        <button id="waBtnRefresh" class="wa-btn-icon" title="Refresh QR / Chats">🔄</button>
+        <button id="waBtnDock" class="wa-btn-icon" title="Toggle Dock / Float">📌</button>
+        <button id="waBtnClose" class="wa-btn-icon" title="Close Window">✕</button>
+      </div>
+    </div>
+
+    <!-- BODY: DISCONNECTED / QR SCAN VIEW -->
+    <div id="waScanView" class="aura-wa-body">
+      <div class="wa-qr-container">
+        <div class="wa-qr-box" id="waQrBox">
+          <div class="wa-qr-spinner" id="waQrSpinner">
+            <div class="wa-spinner-ring"></div>
+            <p style="margin-top:14px; font-size:0.85rem; color:#94a3b8;">Click below to initialize QR Code...</p>
+          </div>
+          <img id="waQrImage" class="wa-qr-img" style="display:none;" alt="WhatsApp Login QR Code" />
+          <div class="wa-scan-laser" id="waScanLaser" style="display:none;"></div>
+        </div>
+        <div class="wa-qr-instructions">
+          <h4>📱 AURA Portal Mein WhatsApp Login Karein</h4>
+          <ol>
+            <li>Apne phone mein <strong>WhatsApp</strong> open karein.</li>
+            <li>Top right <strong>(⋮) Menu</strong> ya <strong>Settings</strong> par tap karein.</li>
+            <li><strong>Linked Devices</strong> (लिंक्ड डिवाइसेस) par tap karein.</li>
+            <li><strong>Link a Device</strong> par tap karke is QR code ko scan karein.</li>
+          </ol>
+          <div class="wa-actions-row">
+            <button id="waBtnStartSession" class="wa-primary-btn">
+              <span>🚀 Connect WhatsApp Now</span>
+            </button>
+          </div>
+          <p class="wa-note-sub">🔒 Multi-Device End-to-End Encrypted &bull; 100% Safe</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- BODY: CONNECTED ACTIVE CHAT VIEW -->
+    <div id="waConnectedView" class="aura-wa-body" style="display:none;">
+      <div class="wa-chat-dashboard">
+        <!-- LEFT: RECENT CHATS -->
+        <div class="wa-chat-sidebar">
+          <div class="wa-sidebar-header">
+            <input type="text" id="waChatSearch" placeholder="🔍 Search contacts..." />
+          </div>
+          <div class="wa-chats-list" id="waChatsList">
+            <!-- Dynamically populated -->
+          </div>
+          <div class="wa-sidebar-footer">
+            <button id="waBtnLogout" class="wa-danger-btn">Disconnect Session</button>
+          </div>
+        </div>
+
+        <!-- RIGHT: ACTIVE CHAT / COMPOSER -->
+        <div class="wa-chat-main">
+          <div class="wa-chat-main-header">
+            <div class="wa-active-user-meta">
+              <div id="waActiveChatTitle" style="font-weight:700; color:#fff; font-size:1rem;">Select a Chat</div>
+              <div id="waActiveChatSub" style="font-size:0.75rem; color:#10b981;">Online &bull; Multi-Device</div>
+            </div>
+            <div class="wa-quick-contact-pills" id="waQuickContacts">
+              <span class="wa-contact-chip" data-phone="+919876543210" data-name="Mummy">Mummy</span>
+              <span class="wa-contact-chip" data-phone="+919876543211" data-name="Papa">Papa</span>
+              <span class="wa-contact-chip" data-phone="+919876543212" data-name="Bhai">Bhai</span>
+            </div>
+          </div>
+          <div class="wa-messages-container" id="waMessagesContainer">
+            <div class="wa-empty-chat-prompt">
+              <span>💬</span>
+              <p>Koi chat select karein ya niche phone number/message type karein.</p>
+            </div>
+          </div>
+          <div class="wa-composer-row">
+            <input type="text" id="waComposerPhone" placeholder="+91 Phone or Contact" style="width:140px; flex-shrink:0;" />
+            <input type="text" id="waComposerInput" placeholder="Type WhatsApp message here..." />
+            <button id="waComposerSendBtn" class="wa-send-btn">
+              <span>Send</span>
+              <span>➤</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
 </body>
 </html>
