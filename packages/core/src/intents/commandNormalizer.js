@@ -1,8 +1,150 @@
 const { APP_REGISTRY, findAppByAlias } = require('../registry/appRegistry');
 
+const ytWord = '(?:youtube|you\\s*tube|yt|यूट्यूब|युटुब|यू\\s*ट्यूब|यूटुब)';
+const googleWord = '(?:google|googal|गूगल)';
+const wikiWord = '(?:wikipedia|wiki|विकिपीडिया|विकीपीडिया)';
+const ghWord = '(?:github|गिटहब|गिट\\s*हब)';
+
+const playVerbs = '(?:chala\\s*do|chalao|chala\\s*de|chala\\s*dena|play\\s*karo|play\\s*kar\\s*do|play|baja\\s*do|bajao|search\\s*karo|search\\s*kar\\s*do|dhoondo|khojo|चला\\s*दो|चलाओ|चला\\s*दे|चला\\s*देना|प्ले\\s*करो|बजा\\s*दो|बजाओ|सर्च\\s*करो|सर्च\\s*कर\\s*दो|ढूंढो|खोजो|दिखाओ|दिखा\\s*दो)';
+const searchVerbs = '(?:search\\s*karo|search\\s*kar\\s*do|search|dhoondo|khojo|dekho|सर्च\\s*करो|सर्च\\s*कर\\s*दो|ढूंढो|खोजो|दिखाओ|दिखा\\s*दो|देखो)';
+
+const prepOpt = '(?:\\s+(?:pe|par|me|mein|ko|पर|पे|में|को))?';
+
+function extractMediaOrSearch(clean, rawPrompt) {
+  // --- 1. YouTube Matchers ---
+  // Pattern A: youtube [pe/par] chala do <query>
+  let ytMatch = clean.match(new RegExp(`^${ytWord}${prepOpt}\\s+${playVerbs}\\s+(.+)`, 'i'));
+  if (ytMatch && ytMatch[1] && ytMatch[1].trim()) {
+    const q = ytMatch[1].trim();
+    return {
+      isCommand: true,
+      intent: 'PLAY_MEDIA',
+      target: 'YOUTUBE',
+      app: APP_REGISTRY['YOUTUBE'],
+      parameters: { query: q, url: `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`, service: 'YOUTUBE' },
+      normalizedText: clean,
+      originalPrompt: rawPrompt
+    };
+  }
+
+  // Pattern B: chalao <query> on youtube [par]
+  ytMatch = clean.match(new RegExp(`^${playVerbs}\\s+(.+?)\\s+(?:on|pe|par|me|mein|पर|पे|में)?\\s*${ytWord}${prepOpt}$`, 'i'));
+  if (ytMatch && ytMatch[1] && ytMatch[1].trim()) {
+    const q = ytMatch[1].trim();
+    return {
+      isCommand: true,
+      intent: 'PLAY_MEDIA',
+      target: 'YOUTUBE',
+      app: APP_REGISTRY['YOUTUBE'],
+      parameters: { query: q, url: `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`, service: 'YOUTUBE' },
+      normalizedText: clean,
+      originalPrompt: rawPrompt
+    };
+  }
+
+  // Pattern C: youtube [pe/par] <query> chala do
+  ytMatch = clean.match(new RegExp(`^${ytWord}${prepOpt}\\s+(.+?)\\s+${playVerbs}$`, 'i'));
+  if (ytMatch && ytMatch[1] && ytMatch[1].trim()) {
+    const q = ytMatch[1].trim();
+    if (!['kholo', 'open', 'start', 'खोलो'].includes(q.toLowerCase())) {
+      return {
+        isCommand: true,
+        intent: 'PLAY_MEDIA',
+        target: 'YOUTUBE',
+        app: APP_REGISTRY['YOUTUBE'],
+        parameters: { query: q, url: `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`, service: 'YOUTUBE' },
+        normalizedText: clean,
+        originalPrompt: rawPrompt
+      };
+    }
+  }
+
+  // --- 2. Google Matchers ---
+  // Pattern A: google [pe/par] search karo <query>
+  let gMatch = clean.match(new RegExp(`^${googleWord}${prepOpt}\\s+${searchVerbs}\\s+(.+)`, 'i'));
+  if (gMatch && gMatch[1] && gMatch[1].trim()) {
+    const q = gMatch[1].trim();
+    return {
+      isCommand: true,
+      intent: 'SEARCH_WEB',
+      target: 'GOOGLE',
+      app: APP_REGISTRY['CHROME'] || null,
+      parameters: { query: q, url: `https://www.google.com/search?q=${encodeURIComponent(q)}`, service: 'GOOGLE' },
+      normalizedText: clean,
+      originalPrompt: rawPrompt
+    };
+  }
+
+  // Pattern B: search <query> on google
+  gMatch = clean.match(new RegExp(`^${searchVerbs}\\s+(.+?)\\s+(?:on|pe|par|me|mein|पर|पे|में)?\\s*${googleWord}${prepOpt}$`, 'i'));
+  if (gMatch && gMatch[1] && gMatch[1].trim()) {
+    const q = gMatch[1].trim();
+    return {
+      isCommand: true,
+      intent: 'SEARCH_WEB',
+      target: 'GOOGLE',
+      app: APP_REGISTRY['CHROME'] || null,
+      parameters: { query: q, url: `https://www.google.com/search?q=${encodeURIComponent(q)}`, service: 'GOOGLE' },
+      normalizedText: clean,
+      originalPrompt: rawPrompt
+    };
+  }
+
+  // Pattern C: google [pe/par] <query> search karo
+  gMatch = clean.match(new RegExp(`^${googleWord}${prepOpt}\\s+(.+?)\\s+${searchVerbs}$`, 'i'));
+  if (gMatch && gMatch[1] && gMatch[1].trim()) {
+    const q = gMatch[1].trim();
+    return {
+      isCommand: true,
+      intent: 'SEARCH_WEB',
+      target: 'GOOGLE',
+      app: APP_REGISTRY['CHROME'] || null,
+      parameters: { query: q, url: `https://www.google.com/search?q=${encodeURIComponent(q)}`, service: 'GOOGLE' },
+      normalizedText: clean,
+      originalPrompt: rawPrompt
+    };
+  }
+
+  // --- 3. Wikipedia Matchers ---
+  let wMatch = clean.match(new RegExp(`^${wikiWord}${prepOpt}\\s+${searchVerbs}\\s+(.+)`, 'i')) ||
+               clean.match(new RegExp(`^${wikiWord}${prepOpt}\\s+(.+?)\\s+${searchVerbs}$`, 'i')) ||
+               clean.match(new RegExp(`^${searchVerbs}\\s+(.+?)\\s+(?:on|pe|par|me|mein|पर|पे|में)?\\s*${wikiWord}${prepOpt}$`, 'i'));
+  if (wMatch && wMatch[1] && wMatch[1].trim()) {
+    const q = wMatch[1].trim();
+    return {
+      isCommand: true,
+      intent: 'SEARCH_WEB',
+      target: 'WIKIPEDIA',
+      app: null,
+      parameters: { query: q, url: `https://en.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(q)}`, service: 'WIKIPEDIA' },
+      normalizedText: clean,
+      originalPrompt: rawPrompt
+    };
+  }
+
+  // --- 4. GitHub Matchers ---
+  let ghMatch = clean.match(new RegExp(`^${ghWord}${prepOpt}\\s+${searchVerbs}\\s+(.+)`, 'i')) ||
+                clean.match(new RegExp(`^${ghWord}${prepOpt}\\s+(.+?)\\s+${searchVerbs}$`, 'i')) ||
+                clean.match(new RegExp(`^${searchVerbs}\\s+(.+?)\\s+(?:on|pe|par|me|mein|पर|पे|में)?\\s*${ghWord}${prepOpt}$`, 'i'));
+  if (ghMatch && ghMatch[1] && ghMatch[1].trim()) {
+    const q = ghMatch[1].trim();
+    return {
+      isCommand: true,
+      intent: 'SEARCH_WEB',
+      target: 'GITHUB',
+      app: null,
+      parameters: { query: q, url: `https://github.com/search?q=${encodeURIComponent(q)}`, service: 'GITHUB' },
+      normalizedText: clean,
+      originalPrompt: rawPrompt
+    };
+  }
+
+  return null;
+}
+
 /**
  * Normalizes input text and parses OS application intents.
- * Supports Hindi, English, and Hinglish.
+ * Supports Hindi (Devanagari), English, and Hinglish.
  */
 function normalizeAndParseIntent(rawPrompt) {
   if (!rawPrompt || typeof rawPrompt !== 'string') {
@@ -13,107 +155,14 @@ function normalizeAndParseIntent(rawPrompt) {
   let clean = rawPrompt.toLowerCase().trim();
 
   // Strip common wake prefixes if present
-  clean = clean.replace(/^(hey aura|hello aura|aura|please|kripya)\s+/i, '').trim();
+  clean = clean.replace(/^(hey aura|hello aura|aura|please|kripya|कृपया|सुनों|सुनो)\s+/i, '').trim();
 
   // =========================================================================
-  // 1.5 BROWSER AUTOMATION FAST PATH: PLAY MEDIA & SEARCH WEB
+  // 1.5 BROWSER AUTOMATION FAST PATH: MEDIA & SEARCH
   // =========================================================================
-
-  // --- YouTube Play / Search ---
-  // e.g. "youtube pe arijit singh ke gaane chala do"
-  const ytPlayMatch1 = clean.match(/(?:youtube|yt)\s+(?:pe|par|me|mein)\s+(.+?)\s+(?:chala\s*do|chalao|play\s*karo|play\s*kar\s*do|baja\s*do|bajao)/i);
-  // e.g. "play lofi beats on youtube" or "chalao lofi beats youtube pe"
-  const ytPlayMatch2 = clean.match(/(?:play|chalao|chala\s*do|bajao|baja\s*do)\s+(.+?)\s+(?:on\s+youtube|youtube\s+pe|youtube\s+par)/i);
-  // e.g. "youtube pe search karo ..."
-  const ytSearchMatch = clean.match(/(?:youtube|yt)\s+(?:pe|par|me|mein)\s+(?:search\s*karo|search\s*kar\s*do|dhoondo)\s+(.+)/i);
-
-  const ytQuery = (ytPlayMatch1 && ytPlayMatch1[1]) || (ytPlayMatch2 && ytPlayMatch2[1]) || (ytSearchMatch && ytSearchMatch[1]);
-  if (ytQuery && ytQuery.trim()) {
-    const query = ytQuery.trim();
-    return {
-      isCommand: true,
-      intent: 'PLAY_MEDIA',
-      target: 'YOUTUBE',
-      app: APP_REGISTRY['YOUTUBE'],
-      parameters: {
-        query,
-        url: `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`,
-        service: 'YOUTUBE'
-      },
-      normalizedText: clean,
-      originalPrompt: rawPrompt
-    };
-  }
-
-  // --- Google Search ---
-  // e.g. "google pe search karo best laptops" or "google par dhoondo best laptops"
-  const googleMatch1 = clean.match(/(?:google)\s+(?:pe|par|me|mein)\s+(?:search\s*karo|search\s*kar\s*do|dhoondo)\s+(.+)/i);
-  // e.g. "google pe best laptops search karo"
-  const googleMatch2 = clean.match(/(?:google)\s+(?:pe|par|me|mein)\s+(.+?)\s+(?:search\s*karo|search\s*kar\s*do|dhoondo)/i);
-  // e.g. "search best laptops on google" or "search google for best laptops"
-  const googleMatch3 = clean.match(/(?:search|dhoondo)\s+(?:on\s+google|google\s+for)\s+(.+)/i);
-  const googleMatch4 = clean.match(/(?:search|dhoondo)\s+(.+?)\s+on\s+google/i);
-
-  const googleQuery = (googleMatch1 && googleMatch1[1]) || (googleMatch2 && googleMatch2[1]) || (googleMatch3 && googleMatch3[1]) || (googleMatch4 && googleMatch4[1]);
-  if (googleQuery && googleQuery.trim()) {
-    const query = googleQuery.trim();
-    return {
-      isCommand: true,
-      intent: 'SEARCH_WEB',
-      target: 'GOOGLE',
-      app: APP_REGISTRY['CHROME'] || null,
-      parameters: {
-        query,
-        url: `https://www.google.com/search?q=${encodeURIComponent(query)}`,
-        service: 'GOOGLE'
-      },
-      normalizedText: clean,
-      originalPrompt: rawPrompt
-    };
-  }
-
-  // --- Wikipedia Search ---
-  const wikiMatch1 = clean.match(/(?:wikipedia|wiki)\s+(?:pe|par|me|mein)\s+(?:search\s*karo|search\s*kar\s*do|dhoondo)\s+(.+)/i);
-  const wikiMatch2 = clean.match(/(?:wikipedia|wiki)\s+(?:pe|par|me|mein)\s+(.+?)\s+(?:search\s*karo|search\s*kar\s*do|dhoondo)/i);
-  const wikiMatch3 = clean.match(/(?:search|dhoondo)\s+(.+?)\s+on\s+wikipedia/i);
-  const wikiQuery = (wikiMatch1 && wikiMatch1[1]) || (wikiMatch2 && wikiMatch2[1]) || (wikiMatch3 && wikiMatch3[1]);
-  if (wikiQuery && wikiQuery.trim()) {
-    const query = wikiQuery.trim();
-    return {
-      isCommand: true,
-      intent: 'SEARCH_WEB',
-      target: 'WIKIPEDIA',
-      app: null,
-      parameters: {
-        query,
-        url: `https://en.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(query)}`,
-        service: 'WIKIPEDIA'
-      },
-      normalizedText: clean,
-      originalPrompt: rawPrompt
-    };
-  }
-
-  // --- GitHub Search ---
-  const ghMatch1 = clean.match(/(?:github)\s+(?:pe|par|me|mein)\s+(?:search\s*karo|search\s*kar\s*do|dhoondo)\s+(.+)/i);
-  const ghMatch2 = clean.match(/(?:github)\s+(?:pe|par|me|mein)\s+(.+?)\s+(?:search\s*karo|search\s*kar\s*do|dhoondo)/i);
-  const ghMatch3 = clean.match(/(?:search|dhoondo)\s+(.+?)\s+on\s+github/i);
-  const ghQuery = (ghMatch1 && ghMatch1[1]) || (ghMatch2 && ghMatch2[1]) || (ghMatch3 && ghMatch3[1]);
-  if (ghQuery && ghQuery.trim()) {
-    const query = ghQuery.trim();
-    return {
-      isCommand: true,
-      intent: 'SEARCH_WEB',
-      target: 'GITHUB',
-      app: null,
-      parameters: {
-        query,
-        url: `https://github.com/search?q=${encodeURIComponent(query)}`,
-        service: 'GITHUB'
-      },
-      normalizedText: clean,
-      originalPrompt: rawPrompt
-    };
+  const mediaOrSearchResult = extractMediaOrSearch(clean, rawPrompt);
+  if (mediaOrSearchResult) {
+    return mediaOrSearchResult;
   }
 
   // =========================================================================
@@ -127,12 +176,14 @@ function normalizeAndParseIntent(rawPrompt) {
   // 3. Detect Action Verb
   const closePatterns = [
     'band karo', 'band kar do', 'band kar', 'band kardo', 'close karo', 'close kar do',
-    'hatao', 'hata do', 'exit', 'quit', 'kill', 'close', 'terminate'
+    'hatao', 'hata do', 'exit', 'quit', 'kill', 'close', 'terminate',
+    'बंद करो', 'बंद कर दो', 'हटाओ', 'हटा दो', 'बंद'
   ];
 
   const focusPatterns = [
     'foreground mein lao', 'foreground me lao', 'foreground', 'focus karo', 'focus kar do',
-    'focus', 'aage lao', 'samne lao', 'bring to front', 'switch to'
+    'focus', 'aage lao', 'samne lao', 'bring to front', 'switch to',
+    'सामने लाओ', 'आगे लाओ', 'फोकस करो'
   ];
 
   let intent = 'OPEN_APP'; // default when app is identified

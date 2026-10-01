@@ -251,8 +251,12 @@ class OsBridge {
   _launchBrowserUrl(url) {
     if (!url || typeof url !== 'string' || !url.startsWith('http')) return;
     try {
-      exec(`start "" "${url}"`, (error) => {
-        if (error) console.warn('[OS BRIDGE URL LAUNCH ERROR]:', error.message);
+      exec(`rundll32 url.dll,FileProtocolHandler "${url}"`, (error) => {
+        if (error) {
+          exec(`start "" "${url}"`, (err2) => {
+            if (err2) console.warn('[OS BRIDGE URL LAUNCH ERROR]:', err2.message);
+          });
+        }
       });
     } catch (e) {
       console.warn('[OS BRIDGE URL EXCEPTION]:', e.message);
