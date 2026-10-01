@@ -77,6 +77,8 @@ class OsBridge {
         result = await this._handlePlayMedia({ app, parameters, target });
       } else if (intent === 'SEARCH_WEB') {
         result = await this._handleSearchWeb({ app, parameters, target });
+      } else if (intent === 'SEND_MESSAGE') {
+        result = await this._handleSendMessage({ app, parameters, target });
       } else {
         result = {
           success: false,
@@ -389,6 +391,46 @@ if ($proc) {
         reject(err);
       }
     });
+  }
+
+  async _handleSendMessage({ app, parameters, target }) {
+    const rawTarget = String(target || '').toUpperCase();
+    const recipient = parameters && parameters.recipient ? parameters.recipient : 'Recipient';
+    const message = parameters && parameters.message ? parameters.message : '';
+    const phone = parameters && parameters.phone ? parameters.phone : '';
+    const url = parameters && parameters.url ? parameters.url : (
+      phone 
+        ? `https://web.whatsapp.com/send?phone=${encodeURIComponent(phone)}&text=${encodeURIComponent(message)}`
+        : 'https://web.whatsapp.com/'
+    );
+
+    if (rawTarget === 'WHATSAPP' || !rawTarget) {
+      const launchCommand = `start "" "${url}"`;
+      try {
+        await this._launchDetached(launchCommand);
+        return {
+          success: true,
+          action: 'send_message',
+          target: 'WHATSAPP',
+          recipient,
+          phone,
+          message,
+          url,
+          response: `${recipient} ke liye WhatsApp message tayar kar diya gaya hai: "${message}"`
+        };
+      } catch (err) {
+        return {
+          success: false,
+          error: err.message,
+          response: `WhatsApp message open karne me samasya aayi: ${err.message}`
+        };
+      }
+    }
+
+    return {
+      success: false,
+      response: `Unsupported message target: ${target}`
+    };
   }
 
   _verifyCommand(cmd) {

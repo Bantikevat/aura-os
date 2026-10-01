@@ -1,4 +1,5 @@
 const { APP_REGISTRY } = require('../registry/appRegistry');
+const { contactsManager } = require('../contacts/contactsManager');
 
 const ALLOWED_INTENTS = new Set([
   'OPEN_APP',
@@ -9,7 +10,10 @@ const ALLOWED_INTENTS = new Set([
   'CREATE_TASK',
   'SEARCH_MEMORY',
   'PLAY_MEDIA',
-  'SEARCH_WEB'
+  'SEARCH_WEB',
+  'SEND_MESSAGE',
+  'SAVE_CONTACT',
+  'LIST_CONTACTS'
 ]);
 
 const DEFAULT_CONFIDENCE_THRESHOLD = 0.70;
@@ -195,7 +199,7 @@ function validateIntent(parsed, threshold = DEFAULT_CONFIDENCE_THRESHOLD) {
       },
       confidence,
       reasoning: parsed.reasoning || null,
-      responseMessage: `${appName} par "${query}" chala diya gaya hai.`,
+      responseMessage: `${appName} par "${query}" play kar diya gaya hai.`,
       requiresConfirmation: false
     };
   }
@@ -251,7 +255,65 @@ function validateIntent(parsed, threshold = DEFAULT_CONFIDENCE_THRESHOLD) {
     };
   }
 
-  // 7. CHAT intent
+  // 7. SEND_MESSAGE (WhatsApp Message Composer & Sender)
+  if (intentType === 'SEND_MESSAGE') {
+    const recipient = (parameters.recipient || parsed.recipient || parameters.to || '').trim();
+    const message = (parameters.message || parsed.message || parameters.text || '').trim();
+
+    if (!recipient) {
+      return {
+        isValid: false,
+        intent: null,
+        error: 'missing_recipient',
+        requiresClarification: true,
+        clarificationMessage: 'Aap kise WhatsApp message bhejna chahte hain? Kripya naam ya number batayein.'
+      };
+    }
+
+    if (!message) {
+      return {
+        isValid: false,
+        intent: null,
+        error: 'missing_message',
+        requiresClarification: true,
+        clarificationMessage: `Aap ${recipient} ko kya message bhejna chahte hain? Kripya message batayein.`
+      };
+    }
+
+    const contact = contactsManager.resolveContact(recipient);
+    if (!contact || !contact.phone) {
+      return {
+        isValid: false,
+        intent: null,
+        error: 'unknown_contact',
+        requiresClarification: true,
+        clarificationMessage: `"${recipient}" ka phone number contact book mein nahi mila. Kripya unka 10-digit number batayein.`
+      };
+    }
+
+    const cleanPhone = contact.phone.replace(/[^0-9]/g, '');
+    const url = `https://web.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(message)}`;
+
+    return {
+      isValid: true,
+      intent: 'SEND_MESSAGE',
+      target: 'WHATSAPP',
+      app: APP_REGISTRY['WHATSAPP'],
+      parameters: {
+        recipient: contact.name,
+        phone: contact.phone,
+        message,
+        url,
+        service: 'WHATSAPP'
+      },
+      confidence,
+      reasoning: parsed.reasoning || null,
+      responseMessage: `${contact.name} ke liye WhatsApp message compose kar diya gaya hai: "${message}"`,
+      requiresConfirmation: false
+    };
+  }
+
+  // 8. CHAT intent
   if (intentType === 'CHAT') {
     return {
       isValid: true,
@@ -269,7 +331,7 @@ function validateIntent(parsed, threshold = DEFAULT_CONFIDENCE_THRESHOLD) {
     };
   }
 
-  // 8. CREATE_TASK intent
+  // 9. CREATE_TASK intent
   if (intentType === 'CREATE_TASK') {
     const title = parameters.title || parsed.title || parsed.taskTitle || 'Untitled Task';
     return {
@@ -286,7 +348,7 @@ function validateIntent(parsed, threshold = DEFAULT_CONFIDENCE_THRESHOLD) {
     };
   }
 
-  // 9. SEARCH_MEMORY intent
+  // 10. SEARCH_MEMORY intent
   if (intentType === 'SEARCH_MEMORY') {
     const query = parameters.query || parsed.query || '';
     return {

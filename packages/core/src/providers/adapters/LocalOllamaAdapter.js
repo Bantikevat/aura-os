@@ -69,6 +69,7 @@ Allowed intents:
 - "CHAT": User is asking a conversational question, coding explanation, greeting, or general inquiry.
 - "CREATE_TASK": User wants to create or add a new task.
 - "SEARCH_MEMORY": User is asking to remember or search memory.
+- "SEND_MESSAGE": User wants to send a WhatsApp message to a contact or phone number. Target is "WHATSAPP". Parameters MUST contain "recipient" and "message".
 
 STRICT RULES:
 1. NEVER output shell commands or code.
@@ -87,6 +88,9 @@ Example:
 
 Example:
 {"intent": "SEARCH_WEB", "target": "GOOGLE", "parameters": {"query": "Best Laptops 2026"}, "confidence": 0.98}
+
+Example:
+{"intent": "SEND_MESSAGE", "target": "WHATSAPP", "parameters": {"recipient": "Mummy", "message": "Main ghar aa raha hoon"}, "confidence": 0.98}
 
 Example:
 {"intent": "CHAT", "parameters": {"reply": "React is a JavaScript library for building UIs."}, "confidence": 0.99}`;
